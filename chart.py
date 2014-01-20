@@ -1,49 +1,48 @@
 import psutil
 import matplotlib.pyplot as plt
 from matplotlib.patches import Wedge
+import matplotlib
 import math
+import numpy
 
 
 # array of colors to color the wedges of the chart with
 colors = "bgrcmy"
 
 
-class WedgeShape(object):
-    """Helper class to store the physical characteristics of a wedge in the
-    graph."""
-    def __init__(self, center, theta1, theta2, radius):
-        self.center = center
-        self.theta1 = theta1
-        self.theta2 = theta2
-        self.radius = radius
-        self.width = 0.1
+class ProcessWedge(Wedge):
+    """ A wedge that represents a process in memory.
+    Contains the name of its process and various helper methods."""
+    def __init__(self, process_name, *args, **kwargs):
+        self.process_name = process_name
+        Wedge.__init__(self, *args, **kwargs)
 
     @property
     def arc(self):
         return self.theta2 - self.theta1
 
     def get_shape_center(self):
-        theta = math.pi*(self.theta1 + self.theta2)/180
-        x = center[0] + (self.radius - self.width/2)*math.cos(theta/2)
-        y = center[1] + (self.radius - self.width/2)*math.sin(theta/2)
+        theta = math.radians((self.theta1 + self.theta2) / 2)
+        x = self.center[0] + (self.r - self.width/2)*math.cos(theta)
+        y = self.center[1] + (self.r - self.width/2)*math.sin(theta)
         return (x, y)
 
     def get_wedge_points(self):
         angle1 = math.radians(self.theta1)
         angle2 = math.radians(self.theta2)
-        x1 = self.center[0] + (self.radius)*math.cos(angle1)
-        y1 = self.center[1] + (self.radius)*math.sin(angle1)
-        x2 = self.center[0] + (self.radius)*math.cos(angle2)
-        y2 = self.center[1] + (self.radius)*math.sin(angle2)
+        x1 = self.center[0] + (self.r)*math.cos(angle1)
+        y1 = self.center[1] + (self.r)*math.sin(angle1)
+        x2 = self.center[0] + (self.r)*math.cos(angle2)
+        y2 = self.center[1] + (self.r)*math.sin(angle2)
         return ((x1, y1), (x2, y2))
 
     def get_bounds(self):
         angle1 = math.radians(self.theta1)
         angle2 = math.radians(self.theta2)
-        x1 = self.center[0] + (self.radius)*math.cos(angle1)
-        y1 = self.center[1] + (self.radius)*math.sin(angle1)
-        x2 = self.center[0] + (self.radius)*math.cos(angle2)
-        y2 = self.center[1] + (self.radius)*math.sin(angle2)
+        x1 = self.center[0] + (self.r)*math.cos(angle1)
+        y1 = self.center[1] + (self.r)*math.sin(angle1)
+        x2 = self.center[0] + (self.r)*math.cos(angle2)
+        y2 = self.center[1] + (self.r)*math.sin(angle2)
 
         left = min(self.center[0], x1, x2)
         right = max(self.center[0], x1, x2)
@@ -51,6 +50,16 @@ class WedgeShape(object):
         bottom = min(self.center[1], y1, y2)
 
         return (top, left, bottom, right)
+    
+    def contains(self, event):
+        (x, y) = (event.xdata - self.center[0], event.ydata - self.center[1])
+        angle = math.degrees(math.atan2(y, x))
+        if angle < 0: angle += 360
+        if self.theta1 <= angle <= self.theta2:
+            mag = math.sqrt(x ** 2 + y ** 2)
+            if self.r - self.width <= mag <= self.r:
+                return True
+        return False
 
 
 def get_mem_percent_including_children(p):
@@ -83,30 +92,30 @@ def draw_proc(p, ax, start_angle, depth, colorindex, center=(0.5, 0.5)):
     Bounds are in the form of (top, left, bottom, right)"""
     try:
         r = 0.1 * (depth + 1)
-        color = colors[colorindex]
+        w_color = colors[colorindex]
         p_arc = get_mem_percent_including_children(p) / 100 * 360
-        ax.add_artist(Wedge(center, r, start_angle, start_angle + p_arc,
-            width=0.1, color=color))
+        wedge = ProcessWedge(p.name, center, r, start_angle,
+                start_angle + p_arc, width=0.1, color=w_color)
+        ax.add_artist(wedge)
 
         c_colorindex = get_next_color_index(colorindex)
 
-        ws = WedgeShape(center, start_angle, start_angle + p_arc, r)
-        bounds = ws.get_bounds()
+        bounds = wedge.get_bounds()
 
         for c in p.get_children():
-            cws, c_bounds = draw_proc(c, ax, start_angle, depth + 1, c_colorindex)
+            c_wedge, c_bounds = draw_proc(c, ax, start_angle, depth + 1, c_colorindex)
 
-            if cws:
+            if c_wedge:
                 bounds = update_bounds(bounds, c_bounds)
-            start_angle += cws.arc
-            c_colorindex = get_next_color_index(c_colorindex)
+                start_angle += c_wedge.arc
+                c_colorindex = get_next_color_index(c_colorindex)
 
             # can't have a child having the same color as their parent
             # or you can't tell them apart
             while c_colorindex == colorindex:
                 c_colorindex = get_next_color_index(c_colorindex)
 
-        return ws, bounds
+        return wedge, bounds
     except psutil.NoSuchProcess:
         return None, None
 
@@ -137,6 +146,7 @@ def create_graph():
     procs = psutil.process_iter()
     fig = plt.figure()
     ax = fig.add_subplot(111)
+    ax.axis('off')
     center = (0.5, 0.5)
 
     root_procs = get_root_processes(procs)
