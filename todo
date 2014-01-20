@@ -1,0 +1,14 @@
+proper process titles
+    not visible by default, only on hover
+    and in some other situations (hover on parent long enough, like in baobab)
+
+    create tree of 'dummy' processes
+        basically copy all of the names of the processes
+        so we can get their names with no lag and no trouble if the
+        processes cease to exist after the graph is generated.
+    
+There should be an update graph button to regenerate the graph.
+
+The program should not hang while the graph is generating.
+
+instead of creating a new wedge class, make it a subclass of matplotlib's Wedge.

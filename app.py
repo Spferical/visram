@@ -1,8 +1,6 @@
 from numpy import arange, sin, pi
 import matplotlib
-import math
 import matplotlib.pyplot as plt
-import random
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
