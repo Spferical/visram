@@ -1,14 +1,11 @@
-proper process titles
-    not visible by default, only on hover
-    and in some other situations (hover on parent long enough, like in baobab)
+Hover-on-parent action as in baobab
+    When the user hovers the mouse over a process wedge long enough, the
+    titles of the major children of that process should appear (if space
+    is available).
 
-    create tree of 'dummy' processes
-        basically copy all of the names of the processes
-        so we can get their names with no lag and no trouble if the
-        processes cease to exist after the graph is generated.
-    
 There should be an update graph button to regenerate the graph.
 
 The program should not hang while the graph is generating.
 
-instead of creating a new wedge class, make it a subclass of matplotlib's Wedge.
+Move from matplotlib to a library better for real-time interactive graphics,
+such as pyqtgraph. The current implementation lags on a netbook.
