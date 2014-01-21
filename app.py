@@ -1,3 +1,4 @@
+#!/usr/bin/python2
 from numpy import arange, sin, pi
 import matplotlib
 import matplotlib.pyplot as plt
@@ -51,7 +52,7 @@ class CanvasPanel(wx.Panel):
 
 if __name__ == "__main__":
     app = wx.App()
-    fr = wx.Frame(None, title='test')
+    fr = wx.Frame(None, title='Visram')
     panel = CanvasPanel(fr)
     fr.Show()
     app.MainLoop()

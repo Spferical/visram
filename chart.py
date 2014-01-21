@@ -1,3 +1,4 @@
+#!/usr/bin/python2
 import psutil
 import matplotlib.pyplot as plt
 from matplotlib.patches import Wedge

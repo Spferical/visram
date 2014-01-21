@@ -1,4 +1,5 @@
 Hover-on-parent action as in baobab
+
     When the user hovers the mouse over a process wedge long enough, the
     titles of the major children of that process should appear (if space
     is available).
@@ -9,3 +10,6 @@ The program should not hang while the graph is generating.
 
 Move from matplotlib to a library better for real-time interactive graphics,
 such as pyqtgraph. The current implementation lags on a netbook.
+
+    http://qt-project.org/doc/qt-4.8/qgraphicsellipseitem.html can be used
+    for wedges
