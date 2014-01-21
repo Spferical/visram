@@ -2,9 +2,7 @@
 import psutil
 import matplotlib.pyplot as plt
 from matplotlib.patches import Wedge
-import matplotlib
 import math
-import numpy
 
 
 # array of colors to color the wedges of the chart with
@@ -63,7 +61,7 @@ class ProcessWedge(Wedge):
         return False
 
 
-def get_mem_percent_including_children(p):
+def get_mem_percent_including_children(p, pmap, ptree):
     """Gets the percent of RAM a process is using, including that used by all
     of its children."""
     try:
@@ -72,8 +70,8 @@ def get_mem_percent_including_children(p):
         memory_percent = 0
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
-            memory_percent += p.get_memory_percent()
-            for child in p.get_children():
+            memory_percent += pmap[p]
+            for child in ptree[p]:
                 processes_to_check_stack.append(child)
         return memory_percent
     except psutil.NoSuchProcess:
@@ -88,13 +86,33 @@ def get_root_processes(procs):
             rootprocs.append(proc)
     return rootprocs
 
-def draw_proc(p, ax, start_angle, depth, colorindex, center=(0.5, 0.5)):
+
+def create_process_mempercent_map():
+    """Creates a dict the mempercents of each process on the system.
+    Probably faster than calling p.get_memory_percent many many times. I
+    haven't tested it though."""
+    map = {}
+    for p in psutil.process_iter():
+        map[p] = p.get_memory_percent()
+    return map
+
+def create_process_tree():
+    """Creates a dict of the children of each process in the system.
+    This is way way way faster than calling psutil.get_children()
+    each time we want to iterate on a process's children."""
+    tree = {}
+    for p in psutil.process_iter():
+        tree[p] = p.get_children()
+    return tree
+
+def draw_proc(p, ax, start_angle, depth, colorindex, pmap, ptree,
+        center=(0.5, 0.5)):
     """Returns the arc and bounds of the drawn wedges.
     Bounds are in the form of (top, left, bottom, right)"""
     try:
         r = 0.1 * (depth + 1)
         w_color = colors[colorindex]
-        p_arc = get_mem_percent_including_children(p) / 100 * 360
+        p_arc = get_mem_percent_including_children(p, pmap, ptree) / 100 * 360
         wedge = ProcessWedge(p.name, center, r, start_angle,
                 start_angle + p_arc, width=0.1, color=w_color)
         ax.add_artist(wedge)
@@ -103,8 +121,9 @@ def draw_proc(p, ax, start_angle, depth, colorindex, center=(0.5, 0.5)):
 
         bounds = wedge.get_bounds()
 
-        for c in p.get_children():
-            c_wedge, c_bounds = draw_proc(c, ax, start_angle, depth + 1, c_colorindex)
+        for c in ptree[p]:
+            c_wedge, c_bounds = draw_proc(c, ax, start_angle, depth + 1,
+                    c_colorindex, pmap, ptree)
 
             if c_wedge:
                 bounds = update_bounds(bounds, c_bounds)
@@ -155,8 +174,11 @@ def create_graph():
     angle_so_far = 0
     colorindex = 0
     bounds = (0.5, 0.5, 0.5, 0.5)
+    pmap = create_process_mempercent_map()
+    ptree = create_process_tree()
     for p in root_procs:
-        ws, bounds2 = draw_proc(p, ax, angle_so_far, 0, colorindex,center)
+        ws, bounds2 = draw_proc(p, ax, angle_so_far, 0, colorindex, pmap,
+                ptree, center)
         bounds = update_bounds(bounds, bounds2)
         angle_so_far += ws.arc
         colorindex = get_next_color_index(colorindex)
