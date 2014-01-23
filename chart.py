@@ -70,9 +70,13 @@ def get_mem_percent_including_children(p, pmap, ptree):
         memory_percent = 0
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
-            memory_percent += pmap[p]
-            for child in ptree[p]:
-                processes_to_check_stack.append(child)
+            try:
+                memory_percent += pmap[p]
+                for child in ptree[p]:
+                    processes_to_check_stack.append(child)
+            except KeyError:
+                # processes are pretty unstable
+                pass
         return memory_percent
     except psutil.NoSuchProcess:
         return 0
@@ -165,7 +169,7 @@ def create_graph():
     """
     procs = psutil.process_iter()
     fig = plt.figure()
-    ax = fig.add_subplot(111)
+    ax = fig.add_axes([0, 0, 1, 1])
     ax.axis('off')
     center = (0.5, 0.5)
 
