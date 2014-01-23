@@ -7,3 +7,10 @@ Hover-on-parent action as in baobab
 There should be an update graph button to regenerate the graph.
 
 The program should not hang while the graph is generating.
+
+Process name wrapping
+
+    Currently, the edges of the chart can cut off process names.
+
+    https://stackoverflow.com/questions/4018860/text-box-in-matplotlib may be
+    useful.
