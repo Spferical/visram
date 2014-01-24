@@ -21,9 +21,10 @@ class CanvasPanel(wx.Panel):
 
         # create the wx panel's sizer, add the canvas, and fit it
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.SHAPED)
+        # the canvas is shaped, because it looks weird when stretch
+        # (wedges lose proportionality and can't easily be compared)
+        self.sizer.Add(self.canvas, 1, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL | wx.SHAPED)
         self.SetSizer(self.sizer)
-        self.Fit()
 
         self.text = None
         self.selected_wedge = None

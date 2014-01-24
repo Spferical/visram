@@ -14,3 +14,7 @@ Process name wrapping
 
     https://stackoverflow.com/questions/4018860/text-box-in-matplotlib may be
     useful.
+
+Optimize wedge mouse hover detection
+
+    70% cpu usage when moving the mouse over the window quickly on a netbook

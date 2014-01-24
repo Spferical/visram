@@ -3,10 +3,15 @@ import psutil
 import matplotlib.pyplot as plt
 from matplotlib.patches import Wedge
 import math
+from matplotlib import colors
+import matplotlib.cm as cmx
 
 
-# array of colors to color the wedges of the chart with
-colors = "bgrcmy"
+# globals for setting the colors in the chart
+NUM_COLORS = 8
+cm = plt.get_cmap('spectral')
+c_norm = colors.Normalize(vmin=0, vmax=NUM_COLORS - 1)
+scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
 
 
 class ProcessWedge(Wedge):
@@ -115,20 +120,30 @@ def draw_proc(p, ax, start_angle, depth, colorindex, pmap, ptree,
     Bounds are in the form of (top, left, bottom, right)"""
     try:
         r = 0.1 * (depth + 1)
-        w_color = colors[colorindex]
+        w_color = scalar_map.to_rgba(colorindex)
         p_arc = get_mem_percent_including_children(p, pmap, ptree) / 100 * 360
         wedge = ProcessWedge(p.name, center, r, start_angle,
-                start_angle + p_arc, width=0.1, color=w_color)
+                start_angle + p_arc, width=0.1, facecolor=w_color,
+                linewidth=0.5, edgecolor=(0, 0, 0))
         ax.add_artist(wedge)
-
         c_colorindex = get_next_color_index(colorindex)
 
         bounds = wedge.get_bounds()
 
-        for c in ptree[p]:
+        # loop through each of the process's children and
+        # draw them in order of memory usage (including children)
+        # (this lets the user focus on the big processes more easily)
+        for c in sorted(ptree[p],
+                key=lambda c: get_mem_percent_including_children(c, pmap,
+                                                                 ptree),
+                reverse=True):
             c_wedge, c_bounds = draw_proc(c, ax, start_angle, depth + 1,
                     c_colorindex, pmap, ptree)
 
+            # if we successfully drew the child wedge and it returned a wedge,
+            # we can update the window's bounds and the start angle based on
+            # it
+            # also we can get a new color index
             if c_wedge:
                 bounds = update_bounds(bounds, c_bounds)
                 start_angle += c_wedge.arc
@@ -153,13 +168,12 @@ def update_bounds(bounds, bounds2):
     bottom = min(bottom, bottom2)
     return (top, left, bottom, right)
 
-
 def get_next_color_index(colorindex):
     """Gets the next index of a color in the colors array.
     If the index points to the last color in the array, it returns an index
     to the first element."""
     colorindex += 1
-    if colorindex >= len(colors):
+    if colorindex >= NUM_COLORS:
         colorindex = 0
     return colorindex
  
