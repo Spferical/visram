@@ -1,12 +1,11 @@
 #!/usr/bin/python2
-from numpy import arange, sin, pi
-import matplotlib
 import matplotlib.pyplot as plt
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 import wx
+from wx.lib import delayedresult
 
 import chart
 
@@ -15,27 +14,14 @@ class CanvasPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        # create the chart of processes and display it
-        self.figure, self.axes = chart.create_graph()
-        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.SetAutoLayout(True)
 
-        # create the wx panel's sizer, add the canvas, and fit it
+        # create the wx panel's sizer
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        # the canvas is shaped, because it looks weird when stretch
-        # (wedges lose proportionality and can't easily be compared)
-        self.sizer.Add(self.canvas, 1, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL | wx.SHAPED)
         self.SetSizer(self.sizer)
 
-        self.text = None
-        self.selected_wedge = None
-
-        # initially draw the canvas and copy it to a background object
-        self.canvas.draw()
-        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
-
-        # connect the functions to be called upon certain events
-        self.canvas.mpl_connect('motion_notify_event', self.on_move)
-        self.canvas.mpl_connect('resize_event', self.on_size)
+        #start drawing the ram
+        delayedresult.startWorker(self.draw_chart, chart.create_graph)
 
     def on_move(self, event):
         """To be called when the user moves the mouse.
@@ -90,6 +76,33 @@ class CanvasPanel(wx.Panel):
 
         # refresh the wx display
         self.Refresh()
+
+    def draw_chart(self, delayed_result):
+        # get the figure and axes
+        (self.figure, self.axes) = delayed_result.get()
+
+        #create the canvas
+        self.canvas = FigureCanvas(self, -1, self.figure)
+
+        # add the canvas to our sizer
+        # the canvas is shaped, because it looks weird when stretch
+        # (wedges lose proportionality and can't easily be compared)
+        self.sizer.Add(self.canvas, 1, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL | wx.SHAPED)
+
+        # lay out the thing so the canvas will be drawn in the right area
+        self.Layout()
+
+        # initialize variables for manipulating the canvas
+        self.text = None
+        self.selected_wedge = None
+
+        # initially draw the canvas and copy it to a background object
+        self.on_size(None)
+
+        # connect the functions to be called upon certain events
+        self.canvas.mpl_connect('motion_notify_event', self.on_move)
+        self.canvas.mpl_connect('resize_event', self.on_size)
+
 
 
 if __name__ == "__main__":

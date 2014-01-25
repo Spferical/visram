@@ -32,26 +32,29 @@ class ProcessWedge(Wedge):
         return (x, y)
 
     def get_wedge_points(self):
-        angle1 = math.radians(self.theta1)
-        angle2 = math.radians(self.theta2)
-        x1 = self.center[0] + (self.r)*math.cos(angle1)
-        y1 = self.center[1] + (self.r)*math.sin(angle1)
-        x2 = self.center[0] + (self.r)*math.cos(angle2)
-        y2 = self.center[1] + (self.r)*math.sin(angle2)
-        return ((x1, y1), (x2, y2))
+        points = []
+        theta1 = math.radians(self.theta1)
+        theta2 = math.radians(self.theta2)
+
+        for angle in (0, math.pi / 2, math.pi, 3 * math.pi / 2,
+                theta1, theta2):
+            if theta1 <= angle <= theta2:
+                x = self.center[0] + (self.r) * math.cos(angle)
+                y = self.center[1] + (self.r) * math.sin(angle)
+                points.append((x, y))
+
+        return points
 
     def get_bounds(self):
-        angle1 = math.radians(self.theta1)
-        angle2 = math.radians(self.theta2)
-        x1 = self.center[0] + (self.r)*math.cos(angle1)
-        y1 = self.center[1] + (self.r)*math.sin(angle1)
-        x2 = self.center[0] + (self.r)*math.cos(angle2)
-        y2 = self.center[1] + (self.r)*math.sin(angle2)
+        left = right = self.center[0]
+        top = bottom = self.center[1]
 
-        left = min(self.center[0], x1, x2)
-        right = max(self.center[0], x1, x2)
-        top = max(self.center[1], y1, y2)
-        bottom = min(self.center[1], y1, y2)
+        for p in self.get_wedge_points():
+
+            left = min(left, p[0])
+            right = max(right, p[0])
+            top = max(top, p[1])
+            bottom = min(bottom, p[1])
 
         return (top, left, bottom, right)
     
