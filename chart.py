@@ -37,7 +37,7 @@ class ProcessWedge(Wedge):
         theta2 = math.radians(self.theta2)
 
         for angle in (0, math.pi / 2, math.pi, 3 * math.pi / 2,
-                theta1, theta2):
+                      theta1, theta2):
             if theta1 <= angle <= theta2:
                 x = self.center[0] + (self.r) * math.cos(angle)
                 y = self.center[1] + (self.r) * math.sin(angle)
@@ -57,11 +57,13 @@ class ProcessWedge(Wedge):
             bottom = min(bottom, p[1])
 
         return (top, left, bottom, right)
-    
+
     def contains(self, event):
         (x, y) = (event.xdata - self.center[0], event.ydata - self.center[1])
         angle = math.degrees(math.atan2(y, x))
-        if angle < 0: angle += 360
+        if angle < 0:
+            angle += 360
+
         if self.theta1 <= angle <= self.theta2:
             mag = math.sqrt(x ** 2 + y ** 2)
             if self.r - self.width <= mag <= self.r:
@@ -108,6 +110,7 @@ def create_process_mempercent_map():
         map[p] = p.get_memory_percent()
     return map
 
+
 def create_process_tree():
     """Creates a dict of the children of each process in the system.
     This is way way way faster than calling psutil.get_children()
@@ -117,7 +120,9 @@ def create_process_tree():
         tree[p] = p.get_children()
     return tree
 
-def draw_proc(p, ax, start_angle, depth, colorindex, pmap, ptree,
+
+def draw_proc(
+        p, ax, start_angle, depth, colorindex, pmap, ptree,
         center=(0.5, 0.5)):
     """Returns the arc and bounds of the drawn wedges.
     Bounds are in the form of (top, left, bottom, right)"""
@@ -125,9 +130,10 @@ def draw_proc(p, ax, start_angle, depth, colorindex, pmap, ptree,
         r = 0.1 * (depth + 1)
         w_color = scalar_map.to_rgba(colorindex)
         p_arc = get_mem_percent_including_children(p, pmap, ptree) / 100 * 360
-        wedge = ProcessWedge(p.name, center, r, start_angle,
-                start_angle + p_arc, width=0.1, facecolor=w_color,
-                linewidth=0.5, edgecolor=(0, 0, 0))
+        wedge = ProcessWedge(
+            p.name, center, r, start_angle,
+            start_angle + p_arc, width=0.1, facecolor=w_color,
+            linewidth=0.5, edgecolor=(0, 0, 0))
         ax.add_artist(wedge)
         c_colorindex = get_next_color_index(colorindex)
 
@@ -136,12 +142,14 @@ def draw_proc(p, ax, start_angle, depth, colorindex, pmap, ptree,
         # loop through each of the process's children and
         # draw them in order of memory usage (including children)
         # (this lets the user focus on the big processes more easily)
-        for c in sorted(ptree[p],
+        for c in sorted(
+                ptree[p],
                 key=lambda c: get_mem_percent_including_children(c, pmap,
                                                                  ptree),
                 reverse=True):
-            c_wedge, c_bounds = draw_proc(c, ax, start_angle, depth + 1,
-                    c_colorindex, pmap, ptree)
+            c_wedge, c_bounds = draw_proc(
+                c, ax, start_angle, depth + 1,
+                c_colorindex, pmap, ptree)
 
             # if we successfully drew the child wedge and it returned a wedge,
             # we can update the window's bounds and the start angle based on
@@ -161,6 +169,7 @@ def draw_proc(p, ax, start_angle, depth, colorindex, pmap, ptree,
     except psutil.NoSuchProcess:
         return None, None
 
+
 def update_bounds(bounds, bounds2):
     """Returns a set of bounds that contain both bounds given as arguments."""
     (top, left, bottom, right) = bounds
@@ -171,6 +180,7 @@ def update_bounds(bounds, bounds2):
     bottom = min(bottom, bottom2)
     return (top, left, bottom, right)
 
+
 def get_next_color_index(colorindex):
     """Gets the next index of a color in the colors array.
     If the index points to the last color in the array, it returns an index
@@ -179,7 +189,7 @@ def get_next_color_index(colorindex):
     if colorindex >= NUM_COLORS:
         colorindex = 0
     return colorindex
- 
+
 
 def create_graph():
     """The important function: creates a graph of all processes in the system.
@@ -198,8 +208,8 @@ def create_graph():
     pmap = create_process_mempercent_map()
     ptree = create_process_tree()
     for p in root_procs:
-        ws, bounds2 = draw_proc(p, ax, angle_so_far, 0, colorindex, pmap,
-                ptree, center)
+        ws, bounds2 = draw_proc(
+            p, ax, angle_so_far, 0, colorindex, pmap, ptree, center)
         bounds = update_bounds(bounds, bounds2)
         angle_so_far += ws.arc
         colorindex = get_next_color_index(colorindex)

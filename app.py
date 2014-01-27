@@ -47,9 +47,10 @@ class CanvasPanel(wx.Panel):
                         # text to the chart
                         if self.text:
                             self.text.remove()
-                        self.text = plt.text(x, y, c.process_name,
-                                bbox=dict(boxstyle="round,pad=.5", fc="0.8"),
-                                figure=self.figure)
+                        self.text = plt.text(
+                            x, y, c.process_name,
+                            bbox=dict(boxstyle="round,pad=.5", fc="0.8"),
+                            figure=self.figure)
 
                         # draw the text and blit it to the display
                         self.axes.draw_artist(self.text)
@@ -87,7 +88,9 @@ class CanvasPanel(wx.Panel):
         # add the canvas to our sizer
         # the canvas is shaped, because it looks weird when stretch
         # (wedges lose proportionality and can't easily be compared)
-        self.sizer.Add(self.canvas, 1, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL | wx.SHAPED)
+        self.sizer.Add(self.canvas, 1,
+                       wx.ALIGN_CENTER_HORIZONTAL |
+                       wx.ALIGN_CENTER_VERTICAL | wx.SHAPED)
 
         # lay out the thing so the canvas will be drawn in the right area
         self.Layout()
@@ -102,7 +105,6 @@ class CanvasPanel(wx.Panel):
         # connect the functions to be called upon certain events
         self.canvas.mpl_connect('motion_notify_event', self.on_move)
         self.canvas.mpl_connect('resize_event', self.on_size)
-
 
 
 if __name__ == "__main__":
