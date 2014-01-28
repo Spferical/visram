@@ -4,8 +4,6 @@ Hover-on-parent action as in baobab
     titles of the major children of that process should appear (if space
     is available).
 
-There should be an update graph button to regenerate the graph.
-
 Process name wrapping
 
     Currently, the edges of the chart can cut off process names.

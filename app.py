@@ -2,7 +2,6 @@
 import matplotlib.pyplot as plt
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 import wx
 from wx.lib import delayedresult
@@ -20,8 +19,30 @@ class CanvasPanel(wx.Panel):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
 
-        #start drawing the ram
+        self.canvas = None
+
+        # create a button to refresh the chart
+        self.refresh_button = wx.Button(self, 1, "Refresh")
+        self.refresh_button.Bind(wx.EVT_BUTTON, self.on_refresh, self.refresh_button)
+        self.sizer.Add(self.refresh_button, 1,
+                       wx.ALIGN_RIGHT | wx.ALIGN_TOP | wx.FIXED)
+
+        #start drawing the chart
+        self.start_drawing_chart_in_background()
+
+    def on_refresh(self, e):
+
+        if self.canvas:
+            self.sizer.Remove(self.canvas)
+            self.canvas.Destroy()
+
+        self.start_drawing_chart_in_background()
+
+
+    def start_drawing_chart_in_background(self):
         delayedresult.startWorker(self.draw_chart, chart.create_graph)
+        #while we're drawing the chart, disable the button for it
+        self.refresh_button.Disable()
 
     def on_move(self, event):
         """To be called when the user moves the mouse.
@@ -106,12 +127,17 @@ class CanvasPanel(wx.Panel):
         self.canvas.mpl_connect('motion_notify_event', self.on_move)
         self.canvas.mpl_connect('resize_event', self.on_size)
 
+        # we finished drawing the chart, so we can now allow the user to
+        # refresh it
+        self.refresh_button.Enable()
+
 
 class VisramFrame(wx.Frame):
 
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
 
+        # simple menu bar
         menu_bar = wx.MenuBar()
         menu = wx.Menu()
         exit = menu.Append(wx.ID_EXIT, "Exit",
@@ -120,8 +146,8 @@ class VisramFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_close, exit)
         self.SetMenuBar(menu_bar)
 
+        #create the canvas panel and lay it out
         self.canvas_panel = CanvasPanel(self)
-
         self.canvas_panel.Layout()
 
     def on_close(self, e):
