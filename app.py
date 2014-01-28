@@ -107,9 +107,29 @@ class CanvasPanel(wx.Panel):
         self.canvas.mpl_connect('resize_event', self.on_size)
 
 
+class VisramFrame(wx.Frame):
+
+    def __init__(self, *args, **kwargs):
+        wx.Frame.__init__(self, *args, **kwargs)
+
+        menu_bar = wx.MenuBar()
+        menu = wx.Menu()
+        exit = menu.Append(wx.ID_EXIT, "Exit",
+                           "Close window and exit program.")
+        menu_bar.Append(menu, "&File")
+        self.Bind(wx.EVT_MENU, self.on_close, exit)
+        self.SetMenuBar(menu_bar)
+
+        self.canvas_panel = CanvasPanel(self)
+
+        self.canvas_panel.Layout()
+
+    def on_close(self, e):
+        self.Close()
+
+
 if __name__ == "__main__":
     app = wx.App()
-    fr = wx.Frame(None, title='Visram')
-    panel = CanvasPanel(fr)
+    fr = VisramFrame(None, title='Visram')
     fr.Show()
     app.MainLoop()
