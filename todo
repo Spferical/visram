@@ -16,3 +16,9 @@ Process name wrapping
 Optimize wedge mouse hover detection
 
     70% cpu usage when moving the mouse over the window quickly on a netbook
+
+Context menu upon clicking a process's wedge
+
+    Should display more info about the process, e.g. pid/raw cpu%/etc
+
+    Buttons to kill the process/edit priority?
