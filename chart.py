@@ -86,6 +86,7 @@ def get_mem_percent_including_children(p, pmap, ptree):
                     processes_to_check_stack.append(child)
             except KeyError:
                 # processes are pretty unstable
+                # and may not have been put in ptree or pmap
                 pass
         return memory_percent
     except psutil.NoSuchProcess:
@@ -142,28 +143,33 @@ def draw_proc(
         # loop through each of the process's children and
         # draw them in order of memory usage (including children)
         # (this lets the user focus on the big processes more easily)
-        for c in sorted(
-                ptree[p],
-                key=lambda c: get_mem_percent_including_children(c, pmap,
-                                                                 ptree),
-                reverse=True):
-            c_wedge, c_bounds = draw_proc(
-                c, ax, start_angle, depth + 1,
-                c_colorindex, pmap, ptree)
+        try:
+            for c in sorted(
+                    ptree[p],
+                    key=lambda c: get_mem_percent_including_children(c, pmap,
+                                                                     ptree),
+                    reverse=True):
+                c_wedge, c_bounds = draw_proc(
+                    c, ax, start_angle, depth + 1,
+                    c_colorindex, pmap, ptree)
 
-            # if we successfully drew the child wedge and it returned a wedge,
-            # we can update the window's bounds and the start angle based on
-            # it
-            # also we can get a new color index
-            if c_wedge:
-                bounds = update_bounds(bounds, c_bounds)
-                start_angle += c_wedge.arc
-                c_colorindex = get_next_color_index(c_colorindex)
+                # if we successfully drew the child wedge and it returned a
+                # wedge, we can update the window's bounds and the start angle
+                # based on it
+                # also we can get a new color index
+                if c_wedge:
+                    bounds = update_bounds(bounds, c_bounds)
+                    start_angle += c_wedge.arc
+                    c_colorindex = get_next_color_index(c_colorindex)
 
-            # can't have a child having the same color as their parent
-            # or you can't tell them apart
-            while c_colorindex == colorindex:
-                c_colorindex = get_next_color_index(c_colorindex)
+                # can't have a child having the same color as their parent
+                # or you can't tell them apart
+                while c_colorindex == colorindex:
+                    c_colorindex = get_next_color_index(c_colorindex)
+        except KeyError:
+            # processes are pretty unstable
+            # and may not have been put in ptree or pmap
+            pass
 
         return wedge, bounds
     except psutil.NoSuchProcess:
