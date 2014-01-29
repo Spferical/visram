@@ -21,11 +21,15 @@ class CanvasPanel(wx.Panel):
 
         self.canvas = None
 
+        # sizer to put buttons
+        self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizer.Add(self.button_sizer)
+
         # create a button to refresh the chart
         self.refresh_button = wx.Button(self, 1, "Refresh")
         self.refresh_button.Bind(wx.EVT_BUTTON, self.on_refresh, self.refresh_button)
-        self.sizer.Add(self.refresh_button, 1,
-                       wx.ALIGN_RIGHT | wx.ALIGN_TOP | wx.FIXED)
+        self.button_sizer.Add(self.refresh_button, 1,
+                       wx.ALIGN_RIGHT)
 
         #start drawing the chart
         self.start_drawing_chart_in_background()
