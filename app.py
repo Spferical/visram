@@ -1,5 +1,5 @@
 #!/usr/bin/python2
-import matplotlib.pyplot as plt
+import matplotlib
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
@@ -41,8 +41,10 @@ class CanvasPanel(wx.Panel):
 
     def start_drawing_chart_in_background(self):
         delayedresult.startWorker(self.draw_chart, chart.create_graph)
+
         #while we're drawing the chart, disable the button for it
         self.refresh_button.Disable()
+
 
     def on_move(self, event):
         """To be called when the user moves the mouse.
@@ -68,7 +70,8 @@ class CanvasPanel(wx.Panel):
                         # text to the chart
                         if self.text:
                             self.text.remove()
-                        self.text = plt.text(
+                        self.text = matplotlib.axes.Axes.text(
+                            self.axes,
                             x, y, c.process_name,
                             bbox=dict(boxstyle="round,pad=.5", fc="0.8"),
                             figure=self.figure)

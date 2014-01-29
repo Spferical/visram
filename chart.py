@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 import psutil
-import matplotlib.pyplot as plt
+import matplotlib
 from matplotlib.patches import Wedge
 import math
 from matplotlib import colors
@@ -9,7 +9,7 @@ import matplotlib.cm as cmx
 
 # globals for setting the colors in the chart
 NUM_COLORS = 8
-cm = plt.get_cmap('spectral')
+cm = cmx.get_cmap('spectral')
 c_norm = colors.Normalize(vmin=0, vmax=NUM_COLORS - 1)
 scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
 
@@ -195,7 +195,7 @@ def create_graph():
     """The important function: creates a graph of all processes in the system.
     """
     procs = psutil.process_iter()
-    fig = plt.figure()
+    fig = matplotlib.figure.Figure()
     ax = fig.add_axes([0, 0, 1, 1])
     ax.axis('off')
     center = (0.5, 0.5)
