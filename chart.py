@@ -204,6 +204,7 @@ def create_graph():
     fig = matplotlib.figure.Figure()
     ax = fig.add_axes([0, 0, 1, 1])
     ax.axis('off')
+    ax.axis('scaled')
     center = (0.5, 0.5)
 
     root_procs = get_root_processes(procs)
