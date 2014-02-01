@@ -25,14 +25,16 @@ class CanvasPanel(wx.Panel):
         self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.button_sizer)
 
-        # create a button to refresh the chart
-        self.refresh_button = wx.Button(self, 1, "Refresh")
-        self.refresh_button.Bind(wx.EVT_BUTTON, self.on_refresh, self.refresh_button)
-        self.button_sizer.Add(self.refresh_button, 1,
-                       wx.ALIGN_RIGHT)
+        # create buttons to draw the chart
+        self.mem_usage_button = wx.Button(self, 1, "Draw RAM Usage")
+        self.mem_usage_button.Bind(wx.EVT_BUTTON, self.on_refresh,
+                                   self.mem_usage_button)
+        self.button_sizer.Add(self.mem_usage_button, 1, wx.ALIGN_RIGHT)
 
-        #start drawing the chart
-        self.start_drawing_chart_in_background()
+        self.cpu_usage_button = wx.Button(self, 1, "Draw CPU Usage")
+        self.cpu_usage_button.Bind(wx.EVT_BUTTON, self.on_refresh,
+                                   self.mem_usage_button)
+        self.button_sizer.Add(self.cpu_usage_button, 1, wx.ALIGN_RIGHT)
 
     def on_refresh(self, e):
 
@@ -40,14 +42,16 @@ class CanvasPanel(wx.Panel):
             self.sizer.Remove(self.canvas)
             self.canvas.Destroy()
 
-        self.start_drawing_chart_in_background()
+        draw_cpu_usage = (e.GetEventObject() == self.cpu_usage_button)
+        self.start_drawing_chart_in_background(draw_cpu_usage)
 
 
-    def start_drawing_chart_in_background(self):
-        delayedresult.startWorker(self.draw_chart, chart.create_graph)
+    def start_drawing_chart_in_background(self, cpu_usage=False):
+        delayedresult.startWorker(self.draw_chart, chart.create_graph, wargs=(cpu_usage,))
 
-        #while we're drawing the chart, disable the button for it
-        self.refresh_button.Disable()
+        #while we're drawing the chart, disable the buttons for it
+        for b in (self.cpu_usage_button, self.mem_usage_button):
+            b.Disable()
 
 
     def on_move(self, event):
@@ -136,7 +140,8 @@ class CanvasPanel(wx.Panel):
 
         # we finished drawing the chart, so we can now allow the user to
         # refresh it
-        self.refresh_button.Enable()
+        for b in (self.mem_usage_button, self.cpu_usage_button):
+            b.Enable()
 
 
 class VisramFrame(wx.Frame):

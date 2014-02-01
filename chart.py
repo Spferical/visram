@@ -102,13 +102,13 @@ def get_root_processes(procs):
     return rootprocs
 
 
-def create_process_mempercent_map():
+def create_process_map(key=lambda p: p.get_memory_percent()):
     """Creates a dict the mempercents of each process on the system.
     Probably faster than calling p.get_memory_percent many many times. I
     haven't tested it though."""
     map = {}
     for p in psutil.process_iter():
-        map[p] = p.get_memory_percent()
+        map[p] = key(p)
     return map
 
 
@@ -197,8 +197,10 @@ def get_next_color_index(colorindex):
     return colorindex
 
 
-def create_graph():
+def create_graph(cpu_usage=False):
     """The important function: creates a graph of all processes in the system.
+    If cpu_usage is False, creates a chart of ram usage.
+    If cpu_usage is True, creates a chart of cpu usage.
     """
     procs = psutil.process_iter()
     fig = matplotlib.figure.Figure()
@@ -212,7 +214,13 @@ def create_graph():
     angle_so_far = 0
     colorindex = 0
     bounds = (0.5, 0.5, 0.5, 0.5)
-    pmap = create_process_mempercent_map()
+
+    if cpu_usage:
+        key = lambda p: p.get_cpu_percent()
+        pmap = create_process_map(key)
+    else:
+        pmap = create_process_map()
+
     ptree = create_process_tree()
     for p in root_procs:
         ws, bounds2 = draw_proc(
