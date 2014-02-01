@@ -71,24 +71,24 @@ class ProcessWedge(Wedge):
         return False
 
 
-def get_mem_percent_including_children(p, pmap, ptree):
-    """Gets the percent of RAM a process is using, including that used by all
+def get_percent_including_children(p, pmap, ptree):
+    """Gets the percent of RAM/CPU a process is using, including that used by all
     of its children."""
     try:
         processes_to_check_stack = []
         processes_to_check_stack.append(p)
-        memory_percent = 0
+        total_percent = 0
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
             try:
-                memory_percent += pmap[p]
+                total_percent += pmap[p]
                 for child in ptree[p]:
                     processes_to_check_stack.append(child)
             except KeyError:
                 # processes are pretty unstable
                 # and may not have been put in ptree or pmap
                 pass
-        return memory_percent
+        return total_percent
     except psutil.NoSuchProcess:
         return 0
 
@@ -103,8 +103,8 @@ def get_root_processes(procs):
 
 
 def create_process_map(key=lambda p: p.get_memory_percent()):
-    """Creates a dict the mempercents of each process on the system.
-    Probably faster than calling p.get_memory_percent many many times. I
+    """Creates a dict the mem/cpu percents of each process on the system.
+    Probably faster than calling p.get_percent many many times. I
     haven't tested it though."""
     map = {}
     for p in psutil.process_iter():
@@ -130,7 +130,7 @@ def draw_proc(
     try:
         r = 0.1 * (depth + 1)
         w_color = scalar_map.to_rgba(colorindex)
-        p_arc = get_mem_percent_including_children(p, pmap, ptree) / 100 * 360
+        p_arc = get_percent_including_children(p, pmap, ptree) / 100 * 360
         wedge = ProcessWedge(
             p.name, center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
@@ -141,12 +141,12 @@ def draw_proc(
         bounds = wedge.get_bounds()
 
         # loop through each of the process's children and
-        # draw them in order of memory usage (including children)
+        # draw them in order of memory/cpu usage (including children)
         # (this lets the user focus on the big processes more easily)
         try:
             for c in sorted(
                     ptree[p],
-                    key=lambda c: get_mem_percent_including_children(c, pmap,
+                    key=lambda c: get_percent_including_children(c, pmap,
                                                                      ptree),
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
