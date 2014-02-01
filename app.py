@@ -45,14 +45,13 @@ class CanvasPanel(wx.Panel):
         draw_cpu_usage = (e.GetEventObject() == self.cpu_usage_button)
         self.start_drawing_chart_in_background(draw_cpu_usage)
 
-
     def start_drawing_chart_in_background(self, cpu_usage=False):
-        delayedresult.startWorker(self.draw_chart, chart.create_graph, wargs=(cpu_usage,))
+        delayedresult.startWorker(self.draw_chart, chart.create_graph,
+                                  wargs=(cpu_usage,))
 
         #while we're drawing the chart, disable the buttons for it
         for b in (self.cpu_usage_button, self.mem_usage_button):
             b.Disable()
-
 
     def on_move(self, event):
         """To be called when the user moves the mouse.
