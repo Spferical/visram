@@ -6,6 +6,8 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 import wx
 from wx.lib import delayedresult
 
+import math
+
 import chart
 
 
@@ -61,34 +63,43 @@ class CanvasPanel(wx.Panel):
 
             # go through each wedge in the graph, checking to see if it
             # contains the mouse event
+            xd, yd = event.xdata - 0.5, event.ydata - 0.5
+            angle = math.degrees(math.atan2(yd, xd))
+            r = math.sqrt(xd ** 2 + yd ** 2)
             for c in self.axes.get_children():
-                if isinstance(c, chart.ProcessWedge) and c.contains(event):
+                if isinstance(c, chart.ProcessWedge) and \
+                        c.contains_polar(r, angle):
 
-                    # if so, and it is not the previously-selected
-                    # wedge, erase the old process name text and
-                    # draw it for the currently-selected process
-                    if self.selected_wedge != c:
+                    # update the display
+                    self.update_selected_wedge(c)
 
-                        self.selected_wedge = c
-                        (x, y) = c.get_shape_center()
-                        self.canvas.restore_region(self.background)
+                    # if we found the hovered-over wedge, we're done!
+                    break
 
-                        # remove the previous text, if any, and add some new
-                        # text to the chart
-                        if self.text:
-                            self.text.remove()
-                        self.text = matplotlib.axes.Axes.text(
-                            self.axes,
-                            x, y, c.process_name,
-                            bbox=dict(boxstyle="round,pad=.5", fc="0.8"),
-                            figure=self.figure)
+    def update_selected_wedge(self, new_wedge):
 
-                        # draw the text and blit it to the display
-                        self.axes.draw_artist(self.text)
-                        self.canvas.blit(self.axes.bbox)
+        # erase the old process name text and
+        # draw it for the currently-selected process
+        if self.selected_wedge != new_wedge:
 
-                        # if we found the hovered-over wedge, we're done!
-                        break
+            self.selected_wedge = new_wedge
+            (x, y) = new_wedge.get_shape_center()
+            self.canvas.restore_region(self.background)
+
+            # remove the previous text, if any, and add some new
+            # text to the chart
+            if self.text:
+                self.text.remove()
+            self.text = matplotlib.axes.Axes.text(
+                self.axes,
+                x, y, new_wedge.process_name,
+                bbox=dict(boxstyle="round,pad=.5", fc="0.8"),
+                figure=self.figure)
+
+            # draw the text and blit it to the display
+            self.axes.draw_artist(self.text)
+            self.canvas.blit(self.axes.bbox)
+
 
     def on_size(self, event):
         """Removes any text and resizes the canvas when the window is

@@ -64,11 +64,23 @@ class ProcessWedge(Wedge):
         if angle < 0:
             angle += 360
 
+        mag = math.sqrt(x ** 2 + y ** 2)
+        return self.contains_polar(mag, angle)
+
+    def contains_polar(self, r, angle_degrees):
+        """
+        Uses precalculated polar coordinates to determine whether the wedge
+        contains a point.
+        """
+        angle = angle_degrees
+        while angle < 0:
+            angle += 360
+
         if self.theta1 <= angle <= self.theta2:
-            mag = math.sqrt(x ** 2 + y ** 2)
-            if self.r - self.width <= mag <= self.r:
+            if self.r - self.width <= r <= self.r:
                 return True
         return False
+
 
 
 def get_percent_including_children(p, pmap, ptree):
