@@ -176,8 +176,11 @@ class VisramFrame(wx.Frame):
         self.Close()
 
 
-if __name__ == "__main__":
+def main():
     app = wx.App()
     fr = VisramFrame(None, title='Visram')
     fr.Show()
     app.MainLoop()
+
+if __name__ == "__main__":
+    main()
