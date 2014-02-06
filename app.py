@@ -6,6 +6,8 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 import wx
 from wx.lib import delayedresult
 
+import mpltextwrap
+
 import math
 
 import chart
@@ -93,8 +95,14 @@ class CanvasPanel(wx.Panel):
             self.text = matplotlib.axes.Axes.text(
                 self.axes,
                 x, y, new_wedge.process_name,
-                bbox=dict(boxstyle="round,pad=.5", fc="0.8"),
-                figure=self.figure)
+                bbox=dict(boxstyle="round", fc="0.9", ec="none"),
+                figure=self.figure,
+                ha='center',
+                va='center'
+                )
+
+            # autowrap the text
+            mpltextwrap.autowrap_text(self.text, self.canvas.renderer)
 
             # draw the text and blit it to the display
             self.axes.draw_artist(self.text)
@@ -126,6 +134,7 @@ class CanvasPanel(wx.Panel):
 
         #create the canvas
         self.canvas = FigureCanvas(self, -1, self.figure)
+        self.canvas.mpl_connect('draw_event', mpltextwrap.on_draw)
 
         # add the canvas to our sizer
         # the canvas is shaped, because it looks weird when stretch
