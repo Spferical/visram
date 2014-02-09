@@ -93,8 +93,8 @@ def get_percent_including_children(p, pmap, ptree):
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
             try:
-                total_percent += pmap[p]
-                for child in ptree[p]:
+                total_percent += pmap[p.pid]
+                for child in ptree[p.pid]:
                     processes_to_check_stack.append(child)
             except KeyError:
                 # processes are pretty unstable
@@ -120,17 +120,22 @@ def create_process_map(key=lambda p: p.get_memory_percent()):
     haven't tested it though."""
     map = {}
     for p in psutil.process_iter():
-        map[p] = key(p)
+        map[p.pid] = key(p)
     return map
 
 
 def create_process_tree():
     """Creates a dict of the children of each process in the system.
     This is way way way faster than calling psutil.get_children()
-    each time we want to iterate on a process's children."""
+    each time we want to iterate on a process's children.
+    Indexed by process PID."""
     tree = {}
     for p in psutil.process_iter():
-        tree[p] = p.get_children()
+        tree[p.pid] = []
+    for p in psutil.process_iter():
+        parent = p.parent
+        if parent:
+            tree[parent.pid].append(p)
     return tree
 
 
@@ -157,7 +162,7 @@ def draw_proc(
         # (this lets the user focus on the big processes more easily)
         try:
             for c in sorted(
-                    ptree[p],
+                    ptree[p.pid],
                     key=lambda c: get_percent_including_children(c, pmap,
                                                                      ptree),
                     reverse=True):
