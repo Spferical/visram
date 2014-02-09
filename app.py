@@ -31,16 +31,16 @@ class CanvasPanel(wx.Panel):
 
         # create buttons to draw the chart
         self.mem_usage_button = wx.Button(self, 1, "Draw RAM Usage")
-        self.mem_usage_button.Bind(wx.EVT_BUTTON, self.on_refresh,
+        self.mem_usage_button.Bind(wx.EVT_BUTTON, self.on_button,
                                    self.mem_usage_button)
         self.button_sizer.Add(self.mem_usage_button, 1, wx.ALIGN_RIGHT)
 
         self.cpu_usage_button = wx.Button(self, 1, "Draw CPU Usage")
-        self.cpu_usage_button.Bind(wx.EVT_BUTTON, self.on_refresh,
+        self.cpu_usage_button.Bind(wx.EVT_BUTTON, self.on_button,
                                    self.mem_usage_button)
         self.button_sizer.Add(self.cpu_usage_button, 1, wx.ALIGN_RIGHT)
 
-    def on_refresh(self, e):
+    def on_button(self, e):
 
         if self.canvas:
             self.sizer.Remove(self.canvas)
