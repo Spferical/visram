@@ -5,6 +5,7 @@ from matplotlib.patches import Wedge
 import math
 from matplotlib import colors
 import matplotlib.cm as cmx
+import time
 
 
 # globals for setting the colors in the chart
@@ -233,8 +234,18 @@ def create_graph(cpu_usage=False):
     bounds = (0.5, 0.5, 0.5, 0.5)
 
     if cpu_usage:
+
+        # by default, psutil waits 0.1 seconds per get_cpu_percent() call
+        # this is very slow
+        # what we can do is call get_cpu_percent for each process at once,
+        # then wait a bit to measure each process's CPU usage.
+        # after this, p.get_cpu_percent() will return useful values
+        for p in psutil.process_iter():
+            p.get_cpu_percent(interval=0)
+        time.sleep(0.2)
+
         # CPU usage total is 100% * NUM_CPUS
-        key = lambda p: p.get_cpu_percent() / psutil.NUM_CPUS
+        key = lambda p: p.get_cpu_percent(interval=0) / psutil.NUM_CPUS
         pmap = create_process_map(key)
     else:
         pmap = create_process_map()
