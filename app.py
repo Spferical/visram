@@ -88,6 +88,36 @@ class CanvasPanel(wx.Panel):
             (x, y) = new_wedge.get_shape_center()
             self.canvas.restore_region(self.background)
 
+            # figure out how to justify the text
+            # (if we just center it, weird behavior occurs near the very edges
+            # and text can get cut off)
+            # If the text is far to the left or right, it should be justified
+            # to that side. Same for top and bottom.
+            (left, right) = self.axes.get_xlim()
+            (bottom, top) = self.axes.get_ylim()
+            width = right - left
+            height = top - bottom
+
+            # simple solution: see which third the position is in vertically
+            # and horizontally, and justify it based on that.
+            # e.g. text in the left-most 1/3 is left-justified
+
+            # horizontal justifying
+            if (x < left + width / 3):
+                ha = 'left'
+            elif x > right - width / 3:
+                ha = 'right'
+            else:
+                ha = 'center'
+
+            # vertical justifying
+            if y < bottom + height / 3:
+                va = 'bottom'
+            elif y > top - height / 3:
+                va = 'top'
+            else:
+                va = 'center'
+
             # remove the previous text, if any, and add some new
             # text to the chart
             if self.text:
@@ -97,8 +127,8 @@ class CanvasPanel(wx.Panel):
                 x, y, new_wedge.process_name,
                 bbox=dict(boxstyle="round", fc="0.9", ec="none"),
                 figure=self.figure,
-                ha='center',
-                va='center'
+                ha=ha,
+                va=va
                 )
 
             # autowrap the text
