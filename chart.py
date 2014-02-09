@@ -233,7 +233,8 @@ def create_graph(cpu_usage=False):
     bounds = (0.5, 0.5, 0.5, 0.5)
 
     if cpu_usage:
-        key = lambda p: p.get_cpu_percent()
+        # CPU usage total is 100% * NUM_CPUS
+        key = lambda p: p.get_cpu_percent() / psutil.NUM_CPUS
         pmap = create_process_map(key)
     else:
         pmap = create_process_map()
