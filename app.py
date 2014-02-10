@@ -158,19 +158,33 @@ class CanvasPanel(wx.Panel):
         # refresh the wx display
         self.Refresh()
 
-    def draw_chart(self, delayed_result):
-        # get the figure and axes
-        (self.figure, self.axes) = delayed_result.get()
-
-        # since the figure's background is transparent, if the user is using
-        # a dark theme, the default black title will look out of place and
-        # hard to read. So, we should set it's color to the system's theme.
+    def theme_chart(self):
+        """
+        Uses wx.SystemSettings to set the color of the chart figure's
+        background and title to make it feel native.
+        """
+        # Set the title's color to the system's theme.
         self.axes.title.set_color(
             # convert the color wx returns to a string so matplotlib can
             # read it
             wx.Colour.GetAsString(
                 wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT),
                 wx.C2S_HTML_SYNTAX))
+
+        # set the background color of the figure to the system theme's color
+        self.figure.set_facecolor(
+            # convert the color wx returns to a string so matplotlib can
+            # read it
+            wx.Colour.GetAsString(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND),
+                wx.C2S_HTML_SYNTAX))
+
+    def draw_chart(self, delayed_result):
+        # get the figure and axes
+        (self.figure, self.axes) = delayed_result.get()
+
+        # theme the chart appropriately for the system
+        self.theme_chart()
 
         #create the canvas
         self.canvas = FigureCanvas(self, -1, self.figure)
