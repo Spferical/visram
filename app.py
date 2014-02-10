@@ -164,14 +164,13 @@ class CanvasPanel(wx.Panel):
 
         #create the canvas
         self.canvas = FigureCanvas(self, -1, self.figure)
-        self.canvas.mpl_connect('draw_event', mpltextwrap.on_draw)
 
         # add the canvas to our sizer
         # the canvas is shaped, because it looks weird when stretch
         # (wedges lose proportionality and can't easily be compared)
         self.sizer.Add(self.canvas, 1,
                        wx.ALIGN_CENTER_HORIZONTAL |
-                       wx.ALIGN_CENTER_VERTICAL | wx.SHAPED)
+                       wx.ALIGN_CENTER_VERTICAL | wx.EXPAND)
 
         # lay out the thing so the canvas will be drawn in the right area
         self.Layout()

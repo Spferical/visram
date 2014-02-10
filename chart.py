@@ -222,8 +222,19 @@ def create_graph(cpu_usage=False):
     """
     procs = psutil.process_iter()
     fig = matplotlib.figure.Figure()
-    ax = fig.add_axes([0, 0, 1, 1])
-    ax.axis('off')
+    ax = fig.add_axes([0, 0, 1, .9])
+    ax.tick_params(
+            which='both',
+            bottom='off',
+            left='off',
+            top='off',
+            right='off',
+            labelleft='off',
+            labelbottom='off')
+    if cpu_usage:
+        ax.set_title("CPU Usage")
+    else:
+        ax.set_title("RAM Usage")
     ax.axis('scaled')
     center = (0.5, 0.5)
 
