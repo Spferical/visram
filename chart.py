@@ -222,6 +222,7 @@ def create_graph(cpu_usage=False):
     """
     procs = psutil.process_iter()
     fig = matplotlib.figure.Figure()
+    fig.set_facecolor('none')
     ax = fig.add_axes([0, 0, 1, .9])
     ax.tick_params(
             which='both',
