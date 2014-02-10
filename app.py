@@ -162,6 +162,16 @@ class CanvasPanel(wx.Panel):
         # get the figure and axes
         (self.figure, self.axes) = delayed_result.get()
 
+        # since the figure's background is transparent, if the user is using
+        # a dark theme, the default black title will look out of place and
+        # hard to read. So, we should set it's color to the system's theme.
+        self.axes.title.set_color(
+            # convert the color wx returns to a string so matplotlib can
+            # read it
+            wx.Colour.GetAsString(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT),
+                wx.C2S_HTML_SYNTAX))
+
         #create the canvas
         self.canvas = FigureCanvas(self, -1, self.figure)
 
