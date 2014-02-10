@@ -149,8 +149,12 @@ def draw_proc(
         r = 0.1 * (depth + 1)
         w_color = scalar_map.to_rgba(colorindex)
         p_arc = get_percent_including_children(p, pmap, ptree) / 100 * 360
+	try:
+	    name = p.name
+	except psutil.AccessDenied:
+	    name = "ACCESS DENIED"
         wedge = ProcessWedge(
-            p.name, center, r, start_angle,
+            name, center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
             linewidth=0.5, edgecolor=(0, 0, 0))
         ax.add_artist(wedge)
@@ -223,6 +227,7 @@ def create_graph(cpu_usage=False):
     procs = psutil.process_iter()
     fig = matplotlib.figure.Figure()
     ax = fig.add_axes([0, 0, 1, .9])
+
     ax.tick_params(
             which='both',
             bottom='off',

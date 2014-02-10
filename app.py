@@ -182,7 +182,12 @@ class CanvasPanel(wx.Panel):
         # set the background color of the figure to the system theme's color
         self.figure.set_facecolor(
             get_matplotlib_color(
-                wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)))
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)))
+
+        # set the background color of the axes to the system theme's color
+        self.axes.patch.set_facecolor(
+            get_matplotlib_color(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)))
 
     def draw_chart(self, delayed_result):
         # get the figure and axes
