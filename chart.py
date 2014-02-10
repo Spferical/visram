@@ -236,6 +236,10 @@ def create_graph(cpu_usage=False):
             right='off',
             labelleft='off',
             labelbottom='off')
+
+    for a in ("left", "right", "top", "bottom"):
+        ax.spines[a].set_visible(False)
+
     if cpu_usage:
         ax.set_title("CPU Usage")
     else:
