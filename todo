@@ -9,5 +9,3 @@ Context menu upon clicking a process's wedge
     Should display more info about the process, e.g. pid/raw cpu%/etc
 
     Buttons to kill the process/edit priority?
-
-Use system theme for axes background and hover text
