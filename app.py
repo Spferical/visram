@@ -13,6 +13,11 @@ import math
 import chart
 
 
+def get_matplotlib_color(wx_color):
+    # matplotlib can read strings in this syntax
+    return wx.Colour.GetAsString(wx_color, wx.C2S_HTML_SYNTAX)
+
+
 class CanvasPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -122,10 +127,16 @@ class CanvasPanel(wx.Panel):
             # text to the chart
             if self.text:
                 self.text.remove()
+
+            bg = get_matplotlib_color(wx.SystemSettings.GetColour(
+                wx.SYS_COLOUR_INFOBK))
+            textcolor = get_matplotlib_color(wx.SystemSettings.GetColour(
+                wx.SYS_COLOUR_INFOTEXT))
             self.text = matplotlib.axes.Axes.text(
                 self.axes,
                 x, y, new_wedge.process_name,
-                bbox=dict(boxstyle="round", fc="0.9", ec="none"),
+                color=textcolor,
+                bbox=dict(boxstyle="round", fc=bg, ec="none"),
                 figure=self.figure,
                 ha=ha,
                 va=va
@@ -165,19 +176,13 @@ class CanvasPanel(wx.Panel):
         """
         # Set the title's color to the system's theme.
         self.axes.title.set_color(
-            # convert the color wx returns to a string so matplotlib can
-            # read it
-            wx.Colour.GetAsString(
-                wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT),
-                wx.C2S_HTML_SYNTAX))
+            get_matplotlib_color(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)))
 
         # set the background color of the figure to the system theme's color
         self.figure.set_facecolor(
-            # convert the color wx returns to a string so matplotlib can
-            # read it
-            wx.Colour.GetAsString(
-                wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND),
-                wx.C2S_HTML_SYNTAX))
+            get_matplotlib_color(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)))
 
     def draw_chart(self, delayed_result):
         # get the figure and axes
