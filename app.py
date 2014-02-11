@@ -47,10 +47,6 @@ class CanvasPanel(wx.Panel):
 
     def on_button(self, e):
 
-        if self.canvas:
-            self.sizer.Remove(self.canvas)
-            self.canvas.Destroy()
-
         draw_cpu_usage = (e.GetEventObject() == self.cpu_usage_button)
         self.start_drawing_chart_in_background(draw_cpu_usage)
 
@@ -195,6 +191,11 @@ class CanvasPanel(wx.Panel):
 
         # theme the chart appropriately for the system
         self.theme_chart()
+
+        # destroy the old canvas
+        if self.canvas:
+            self.sizer.Remove(self.canvas)
+            self.canvas.Destroy()
 
         #create the canvas
         self.canvas = FigureCanvas(self, -1, self.figure)
