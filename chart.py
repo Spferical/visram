@@ -83,10 +83,9 @@ class ProcessWedge(Wedge):
         return False
 
 
-
 def get_percent_including_children(p, pmap, ptree):
-    """Gets the percent of RAM/CPU a process is using, including that used by all
-    of its children."""
+    """Gets the percent of RAM/CPU a process is using, including that used by
+    all of its children."""
     try:
         processes_to_check_stack = []
         processes_to_check_stack.append(p)
@@ -149,10 +148,10 @@ def draw_proc(
         r = 0.1 * (depth + 1)
         w_color = scalar_map.to_rgba(colorindex)
         p_arc = get_percent_including_children(p, pmap, ptree) / 100 * 360
-	try:
-	    name = p.name
-	except psutil.AccessDenied:
-	    name = "ACCESS DENIED"
+        try:
+            name = p.name
+        except psutil.AccessDenied:
+            name = "ACCESS DENIED"
         wedge = ProcessWedge(
             name, center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
@@ -169,7 +168,7 @@ def draw_proc(
             for c in sorted(
                     ptree[p.pid],
                     key=lambda c: get_percent_including_children(c, pmap,
-                                                                     ptree),
+                                                                 ptree),
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
                     c, ax, start_angle, depth + 1,
@@ -229,13 +228,13 @@ def create_graph(cpu_usage=False):
     ax = fig.add_axes([0, 0, 1, .9])
 
     ax.tick_params(
-            which='both',
-            bottom='off',
-            left='off',
-            top='off',
-            right='off',
-            labelleft='off',
-            labelbottom='off')
+        which='both',
+        bottom='off',
+        left='off',
+        top='off',
+        right='off',
+        labelleft='off',
+        labelbottom='off')
 
     for a in ("left", "right", "top", "bottom"):
         ax.spines[a].set_visible(False)

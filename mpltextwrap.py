@@ -1,23 +1,26 @@
 # From https://stackoverflow.com/questions/4018860/text-box-in-matplotlib
 import matplotlib.pyplot as plt
+from math import sin, cos, radians
+
 
 def main():
     fig = plt.figure()
     plt.axis([0, 10, 0, 10])
 
     t = "This is a really long string that I'd rather have wrapped so that it"\
-    " doesn't go outside of the figure, but if it's long enough it will go"\
-    " off the top or bottom!"
+        " doesn't go outside of the figure, but if it's long enough it will"\
+        " go off the top or bottom!"
     plt.text(4, 1, t, ha='left', rotation=15)
     plt.text(5, 3.5, t, ha='right', rotation=-15)
     plt.text(5, 10, t, fontsize=18, ha='center', va='top')
     plt.text(3, 0, t, family='serif', style='italic', ha='right')
-    plt.title("This is a really long title that I want to have wrapped so it"\
-             " does not go outside the figure boundaries", ha='center')
+    plt.title("This is a really long title that I want to have wrapped so it"
+              " does not go outside the figure boundaries", ha='center')
 
     # Now make the text auto-wrap...
     fig.canvas.mpl_connect('draw_event', on_draw)
     plt.show()
+
 
 def on_draw(event):
     """Auto-wraps all text objects in a figure at draw-time"""
@@ -40,6 +43,7 @@ def on_draw(event):
     # Reset the draw event callbacks
     fig.canvas.callbacks.callbacks[event.name] = func_handles
 
+
 def autowrap_text(textobj, renderer):
     """Wraps the given matplotlib text object so that it exceed the boundaries
     of the axis it is plotted in."""
@@ -51,7 +55,7 @@ def autowrap_text(textobj, renderer):
     # Set the text to rotate about the left edge (doesn't make sense otherwise)
     textobj.set_rotation_mode('anchor')
 
-    # Get the amount of space in the direction of rotation to the left and 
+    # Get the amount of space in the direction of rotation to the left and
     # right of x0, y0 (left and right are relative to the rotation, as well)
     rotation = textobj.get_rotation()
     right_space = min_dist_inside((x0, y0), rotation, clip)
@@ -60,14 +64,14 @@ def autowrap_text(textobj, renderer):
     # Use either the left or right distance depending on the horiz alignment.
     alignment = textobj.get_horizontalalignment()
     if alignment is 'left':
-        new_width = right_space 
+        new_width = right_space
     elif alignment is 'right':
         new_width = left_space
     else:
         new_width = 2 * min(left_space, right_space)
 
     # Estimate the width of the new size in characters...
-    aspect_ratio = 0.5 # This varies with the font!! 
+    aspect_ratio = 0.5  # This varies with the font!!
     fontsize = textobj.get_size()
     pixels_per_char = aspect_ratio * renderer.points_to_pixels(fontsize)
 
@@ -80,25 +84,25 @@ def autowrap_text(textobj, renderer):
         wrapped_text = textobj.get_text()
     textobj.set_text(wrapped_text)
 
+
 def min_dist_inside(point, rotation, box):
     """Gets the space in a given direction from "point" to the boundaries of
     "box" (where box is an object with x0, y0, x1, & y1 attributes, point is a
     tuple of x,y, and rotation is the angle in degrees)"""
-    from math import sin, cos, radians
     x0, y0 = point
     rotation = radians(rotation)
     distances = []
-    threshold = 0.0001 
-    if cos(rotation) > threshold: 
+    threshold = 0.0001
+    if cos(rotation) > threshold:
         # Intersects the right axis
         distances.append((box.x1 - x0) / cos(rotation))
-    if cos(rotation) < -threshold: 
+    if cos(rotation) < -threshold:
         # Intersects the left axis
         distances.append((box.x0 - x0) / cos(rotation))
-    if sin(rotation) > threshold: 
+    if sin(rotation) > threshold:
         # Intersects the top axis
         distances.append((box.y1 - y0) / sin(rotation))
-    if sin(rotation) < -threshold: 
+    if sin(rotation) < -threshold:
         # Intersects the bottom axis
         distances.append((box.y0 - y0) / sin(rotation))
     return min(distances)

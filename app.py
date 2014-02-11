@@ -145,7 +145,6 @@ class CanvasPanel(wx.Panel):
             self.axes.draw_artist(self.text)
             self.canvas.blit(self.axes.bbox)
 
-
     def on_size(self, event):
         """Removes any text and resizes the canvas when the window is
         resized."""
