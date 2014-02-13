@@ -61,6 +61,9 @@ class CanvasPanel(wx.Panel):
     def on_move(self, event):
         """To be called when the user moves the mouse.
         Displays the name of the process the hovered-over wedge represents."""
+
+        wedge_found = False
+
         # check if event falls within the graph
         if event.xdata and event.ydata:
 
@@ -76,8 +79,13 @@ class CanvasPanel(wx.Panel):
                     # update the display
                     self.update_selected_wedge(c)
 
+                    wedge_found = True
+
                     # if we found the hovered-over wedge, we're done!
                     break
+
+        if not wedge_found:
+            self.clear_selected_wedge()
 
     def update_selected_wedge(self, new_wedge):
 
@@ -144,6 +152,19 @@ class CanvasPanel(wx.Panel):
             # draw the text and blit it to the display
             self.axes.draw_artist(self.text)
             self.canvas.blit(self.axes.bbox)
+
+    def clear_selected_wedge(self):
+        self.selected_wedge = None
+
+        # restore the empty chart
+        self.canvas.restore_region(self.background)
+
+        if self.text:
+             self.text.remove()
+             self.text = None
+
+        self.canvas.blit(self.axes.bbox)
+
 
     def on_size(self, event):
         """Removes any text and resizes the canvas when the window is
