@@ -9,9 +9,8 @@ import time
 
 
 # globals for setting the colors in the chart
-NUM_COLORS = 8
 cm = cmx.get_cmap('spectral')
-c_norm = colors.Normalize(vmin=0, vmax=NUM_COLORS - 1)
+c_norm = colors.Normalize(vmin=0, vmax=1)
 scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
 
 
@@ -140,14 +139,14 @@ def create_process_tree():
 
 
 def draw_proc(
-        p, ax, start_angle, depth, colorindex, pmap, ptree,
+        p, ax, start_angle, depth, pmap, ptree,
         center=(0.5, 0.5)):
     """Returns the arc and bounds of the drawn wedges.
     Bounds are in the form of (top, left, bottom, right)"""
     try:
         r = 0.1 * (depth + 1)
-        w_color = scalar_map.to_rgba(colorindex)
         p_arc = get_percent_including_children(p, pmap, ptree) / 100 * 360
+        w_color = get_color(start_angle + p_arc / 2, depth)
         try:
             name = p.name
         except psutil.AccessDenied:
@@ -157,7 +156,6 @@ def draw_proc(
             start_angle + p_arc, width=0.1, facecolor=w_color,
             linewidth=0.5, edgecolor=(0, 0, 0))
         ax.add_artist(wedge)
-        c_colorindex = get_next_color_index(colorindex)
 
         bounds = wedge.get_bounds()
 
@@ -172,21 +170,15 @@ def draw_proc(
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
                     c, ax, start_angle, depth + 1,
-                    c_colorindex, pmap, ptree)
+                    pmap, ptree)
 
                 # if we successfully drew the child wedge and it returned a
                 # wedge, we can update the window's bounds and the start angle
                 # based on it
-                # also we can get a new color index
                 if c_wedge:
                     bounds = update_bounds(bounds, c_bounds)
                     start_angle += c_wedge.arc
-                    c_colorindex = get_next_color_index(c_colorindex)
 
-                # can't have a child having the same color as their parent
-                # or you can't tell them apart
-                while c_colorindex == colorindex:
-                    c_colorindex = get_next_color_index(c_colorindex)
         except KeyError:
             # processes are pretty unstable
             # and may not have been put in ptree or pmap
@@ -195,6 +187,25 @@ def draw_proc(
         return wedge, bounds
     except psutil.NoSuchProcess:
         return None, None
+
+
+def get_color(theta, depth):
+    # get the index of the color in the colormap
+    # (convert from degrees to float 0-to-1)
+    color_index = theta / 360.0
+    # get the color at that index
+    color = scalar_map.to_rgba(color_index)
+
+    # modify the alpha of the color
+    # greater depths --> lighter color
+    amod = 0.8 ** (depth)
+    color = (
+        color[0],
+        color[1],
+        color[2],
+        color[3] * amod)
+
+    return color
 
 
 def update_bounds(bounds, bounds2):
@@ -206,16 +217,6 @@ def update_bounds(bounds, bounds2):
     top = max(top, top2)
     bottom = min(bottom, bottom2)
     return (top, left, bottom, right)
-
-
-def get_next_color_index(colorindex):
-    """Gets the next index of a color in the colors array.
-    If the index points to the last color in the array, it returns an index
-    to the first element."""
-    colorindex += 1
-    if colorindex >= NUM_COLORS:
-        colorindex = 0
-    return colorindex
 
 
 def create_graph(cpu_usage=False):
@@ -249,7 +250,6 @@ def create_graph(cpu_usage=False):
     root_procs = get_root_processes(procs)
 
     angle_so_far = 0
-    colorindex = 0
     bounds = (0.5, 0.5, 0.5, 0.5)
 
     if cpu_usage:
@@ -270,12 +270,11 @@ def create_graph(cpu_usage=False):
         pmap = create_process_map()
 
     ptree = create_process_tree()
-    for p in root_procs:
+    for i, p in enumerate(root_procs):
         ws, bounds2 = draw_proc(
-            p, ax, angle_so_far, 0, colorindex, pmap, ptree, center)
+            p, ax, angle_so_far, 0, pmap, ptree, center)
         bounds = update_bounds(bounds, bounds2)
         angle_so_far += ws.arc
-        colorindex = get_next_color_index(colorindex)
 
     ax.set_xlim(bounds[1], bounds[3])
     ax.set_ylim(bounds[2], bounds[0])
