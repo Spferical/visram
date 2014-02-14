@@ -78,7 +78,6 @@ class CanvasPanel(wx.Panel):
                                    self.mem_usage_button)
         self.button_sizer.Add(self.cpu_usage_button, 1, wx.ALIGN_RIGHT)
 
-
         #subscribe to colortheme change events
         pub.subscribe(self._on_colortheme_change, 'colortheme.change')
 
@@ -311,7 +310,6 @@ class CanvasPanel(wx.Panel):
             self.background = self.canvas.copy_from_bbox(self.axes.bbox)
 
 
-
 class VisramFrame(wx.Frame):
 
     def __init__(self, *args, **kwargs):
@@ -322,7 +320,7 @@ class VisramFrame(wx.Frame):
         file_menu = wx.Menu()
 
         exit = file_menu.Append(wx.ID_EXIT, "Exit",
-                           "Close window and exit program.")
+                                "Close window and exit program.")
         menu_bar.Append(file_menu, "&File")
 
         edit_menu = wx.Menu()
@@ -371,7 +369,7 @@ class PreferencesFrame(wx.Frame):
         self.theme_label = wx.StaticText(self, -1, "Color Scheme")
         self.theme_combobox = wx.ComboBox(
             self, -1, style=wx.CB_READONLY | wx.CB_SORT, value=theme,
-            choices = matplotlib.cm.cmap_d.keys())
+            choices=matplotlib.cm.cmap_d.keys())
 
         # button for saving preferences
         self.save_button = wx.Button(self, 1, "Save settings")
@@ -388,7 +386,6 @@ class PreferencesFrame(wx.Frame):
 
         self.Bind(wx.EVT_COMBOBOX, self.on_colortheme_pick,
                   self.theme_combobox)
-
 
     def on_colortheme_pick(self, e):
         """Sends a message when colortheme changes."""

@@ -164,7 +164,7 @@ def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key,
             for c in sorted(
                     ptree[p.pid],
                     key=lambda c: get_percent_including_children(c, pmap,
-                        ptree, key),
+                                                                 ptree, key),
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
                     c, ax, start_angle, depth + 1,
