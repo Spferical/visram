@@ -3,9 +3,3 @@ Hover-on-parent action as in baobab
     When the user hovers the mouse over a process wedge long enough, the
     titles of the major children of that process should appear (if space
     is available).
-
-Context menu upon clicking a process's wedge
-
-    Should display more info about the process, e.g. pid/raw cpu%/etc
-
-    Buttons to kill the process/edit priority?
