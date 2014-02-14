@@ -5,6 +5,8 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 import wx
 from wx.lib import delayedresult
+from wx.lib.pubsub import setupkwargs
+from wx.lib.pubsub import pub
 
 import mpltextwrap
 
@@ -53,6 +55,14 @@ class CanvasPanel(wx.Panel):
         self.canvas = None
         self.popup = None
 
+        # get theme from config if available
+        # or default to 'spectral' theme
+        cfg = wx.Config('visram')
+        if cfg.Exists('theme'):
+            self.chart_theme = cfg.Read('theme')
+        else:
+            self.chart_theme = 'spectral'
+
         # sizer to put buttons
         self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.button_sizer)
@@ -68,17 +78,22 @@ class CanvasPanel(wx.Panel):
                                    self.mem_usage_button)
         self.button_sizer.Add(self.cpu_usage_button, 1, wx.ALIGN_RIGHT)
 
+
+        #subscribe to colortheme change events
+        pub.subscribe(self._on_colortheme_change, 'colortheme.change')
+
     def on_button(self, e):
 
         if e.GetEventObject() == self.cpu_usage_button:
             chart_type = 'cpu'
         else:
             chart_type = 'ram'
+
         self.start_drawing_chart_in_background(chart_type)
 
     def start_drawing_chart_in_background(self, type='cpu'):
         delayedresult.startWorker(self.draw_chart, chart.create_graph,
-                                  wargs=(type,))
+                                  wargs=(type, self.chart_theme))
 
         #while we're drawing the chart, disable the buttons for it
         for b in (self.cpu_usage_button, self.mem_usage_button):
@@ -286,6 +301,16 @@ class CanvasPanel(wx.Panel):
                     wx.CAPTION | wx.FRAME_FLOAT_ON_PARENT)
             self.popup.Show()
 
+    def _on_colortheme_change(self, chart_theme):
+        """Sets the colortheme value and recolors the chart, if any."""
+        self.chart_theme = chart_theme
+
+        if self.canvas:
+            chart.recolor(self.figure, self.axes, chart_theme)
+            self.canvas.draw()
+            self.background = self.canvas.copy_from_bbox(self.axes.bbox)
+
+
 
 class VisramFrame(wx.Frame):
 
@@ -294,11 +319,22 @@ class VisramFrame(wx.Frame):
 
         # simple menu bar
         menu_bar = wx.MenuBar()
-        menu = wx.Menu()
-        exit = menu.Append(wx.ID_EXIT, "Exit",
+        file_menu = wx.Menu()
+
+        exit = file_menu.Append(wx.ID_EXIT, "Exit",
                            "Close window and exit program.")
-        menu_bar.Append(menu, "&File")
+        menu_bar.Append(file_menu, "&File")
+
+        edit_menu = wx.Menu()
+        preferences = edit_menu.Append(wx.ID_PREFERENCES, "Preferences",
+                                       "Edit the colors, etc.")
+        menu_bar.Append(edit_menu, "&Edit")
+
         self.Bind(wx.EVT_MENU, self.on_close, exit)
+        self.Bind(wx.EVT_MENU, self.on_preferences, preferences)
+
+        self.prefs = None
+
         self.SetMenuBar(menu_bar)
 
         #create the canvas panel and lay it out
@@ -307,6 +343,70 @@ class VisramFrame(wx.Frame):
 
     def on_close(self, e):
         self.Close()
+
+    def on_preferences(self, e):
+        """Shows a preferences window if not already shown."""
+        if not self.prefs:
+            self.prefs = PreferencesFrame(
+                self, style=wx.SYSTEM_MENU | wx.CLOSE_BOX | wx.CAPTION |
+                wx.FRAME_FLOAT_ON_PARENT)
+        self.prefs.Show()
+
+
+class PreferencesFrame(wx.Frame):
+    def __init__(self, *args, **kwargs):
+
+        # get the current config settings
+        self.cfg = wx.Config('visram')
+        if self.cfg.Exists('theme'):
+            theme = self.cfg.Read('theme')
+        else:
+            # default theme
+            theme = 'spectral'
+
+        kwargs['title'] = "Visram Preferences"
+        wx.Frame.__init__(self, *args, **kwargs)
+
+        # text and combobox for setting theme
+        self.theme_label = wx.StaticText(self, -1, "Color Scheme")
+        self.theme_combobox = wx.ComboBox(
+            self, -1, style=wx.CB_READONLY | wx.CB_SORT, value=theme,
+            choices = matplotlib.cm.cmap_d.keys())
+
+        # button for saving preferences
+        self.save_button = wx.Button(self, 1, "Save settings")
+        self.save_button.Bind(wx.EVT_BUTTON, self.on_save,
+                              self.save_button)
+
+        # sizer stuff
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+        self.sizer.Add(self.theme_label)
+        self.sizer.Add(self.theme_combobox, 1)
+        self.sizer.Add(self.save_button, 1)
+        self.sizer.Fit(self)
+
+        self.Bind(wx.EVT_COMBOBOX, self.on_colortheme_pick,
+                  self.theme_combobox)
+
+
+    def on_colortheme_pick(self, e):
+        """Sends a message when colortheme changes."""
+        pub.sendMessage('colortheme.change',
+                        chart_theme=self.theme_combobox.GetValue())
+
+    def on_save(self, e):
+        """Saves the current settings."""
+        theme = self.theme_combobox.GetValue()
+
+        # display a messsage about whether the save was successful
+        if self.cfg.Write('theme', theme):
+            message = "Safe successful!"
+        else:
+            message = "Uh-oh! Save unsuccessful!"
+        self.md = wx.MessageDialog(self, message,
+                                   style=wx.OK | wx.CENTRE)
+        self.md.ShowModal()
 
 
 def main():

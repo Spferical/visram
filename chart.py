@@ -8,18 +8,13 @@ import matplotlib.cm as cmx
 import time
 
 
-# globals for setting the colors in the chart
-cm = cmx.get_cmap('spectral')
-c_norm = colors.Normalize(vmin=0, vmax=1)
-scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
-
-
 class ProcessWedge(Wedge):
     """ A wedge that represents a process in memory.
     Contains a dict of the info about its process and various helper methods.
     """
-    def __init__(self, process_info, *args, **kwargs):
+    def __init__(self, process_info, depth, *args, **kwargs):
         self.process_info = process_info
+        self.depth = depth
         Wedge.__init__(self, *args, **kwargs)
 
     @property
@@ -142,19 +137,20 @@ def create_process_tree():
     return tree
 
 
-def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key):
+def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key,
+              scalar_cmap):
     """Returns the arc and bounds of the drawn wedges.
     Bounds are in the form of (top, left, bottom, right)"""
     try:
         r = 0.1 * (depth + 1)
         p_arc = get_percent_including_children(p, pmap, ptree, key) / 100 * 360
-        w_color = get_color(start_angle + p_arc / 2, depth)
+        w_color = get_color(start_angle + p_arc / 2, depth, scalar_cmap)
         try:
             name = p.name
         except psutil.AccessDenied:
             name = "ACCESS DENIED"
         wedge = ProcessWedge(
-            pmap[p.pid], center, r, start_angle,
+            pmap[p.pid], depth, center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
             linewidth=0.5, edgecolor=(0, 0, 0))
         ax.add_artist(wedge)
@@ -172,7 +168,7 @@ def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key):
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
                     c, ax, start_angle, depth + 1,
-                    pmap, ptree, center, key)
+                    pmap, ptree, center, key, scalar_cmap)
 
                 # if we successfully drew the child wedge and it returned a
                 # wedge, we can update the window's bounds and the start angle
@@ -191,12 +187,12 @@ def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key):
         return None, None
 
 
-def get_color(theta, depth):
+def get_color(theta, depth, scalar_cmap):
     # get the index of the color in the colormap
     # (convert from degrees to float 0-to-1)
     color_index = theta / 360.0
     # get the color at that index
-    color = scalar_map.to_rgba(color_index)
+    color = scalar_cmap.to_rgba(color_index)
 
     # modify the alpha of the color
     # greater depths --> lighter color
@@ -221,13 +217,21 @@ def update_bounds(bounds, bounds2):
     return (top, left, bottom, right)
 
 
-def create_graph(type):
+def create_graph(type, theme):
     """
     The important function: creates a graph of all processes in the system.
     Types:
         'ram' -- creates a chart of RAM usage
         'cpu' -- creates a chart of CPU usage
+
+    theme -- the matplotlib color map to use
     """
+
+    # create a color map mappable between 0 and 1 for the theme
+    cm = cmx.get_cmap(theme)
+    c_norm = colors.Normalize(vmin=0, vmax=1)
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
+
     procs = psutil.process_iter()
     fig = matplotlib.figure.Figure()
     ax = fig.add_axes([0, 0, 1, .9])
@@ -281,7 +285,7 @@ def create_graph(type):
 
     for i, p in enumerate(root_procs):
         ws, bounds2 = draw_proc(
-            p, ax, angle_so_far, 0, pmap, ptree, center, key)
+            p, ax, angle_so_far, 0, pmap, ptree, center, key, scalar_map)
         bounds = update_bounds(bounds, bounds2)
         angle_so_far += ws.arc
 
@@ -289,3 +293,18 @@ def create_graph(type):
     ax.set_ylim(bounds[2], bounds[0])
 
     return fig, ax, type
+
+
+def recolor(fig, ax, theme):
+    """Recolors a chart for a color theme."""
+
+    # create a color map for the theme mappable between 0 and 1
+    cm = cmx.get_cmap(theme)
+    c_norm = colors.Normalize(vmin=0, vmax=1)
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
+
+    # go through each wedge and recolor it
+    for c in ax.get_children():
+        if isinstance(c, ProcessWedge):
+            w_color = get_color((c.theta1 + c.theta2) / 2, c.depth, scalar_map)
+            c.set_facecolor(w_color)
