@@ -16,9 +16,10 @@ scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
 
 class ProcessWedge(Wedge):
     """ A wedge that represents a process in memory.
-    Contains the name of its process and various helper methods."""
-    def __init__(self, process_name, *args, **kwargs):
-        self.process_name = process_name
+    Contains a dict of the info about its process and various helper methods.
+    """
+    def __init__(self, process_info, *args, **kwargs):
+        self.process_info = process_info
         Wedge.__init__(self, *args, **kwargs)
 
     @property
@@ -82,7 +83,7 @@ class ProcessWedge(Wedge):
         return False
 
 
-def get_percent_including_children(p, pmap, ptree):
+def get_percent_including_children(p, pmap, ptree, key):
     """Gets the percent of RAM/CPU a process is using, including that used by
     all of its children."""
     try:
@@ -92,7 +93,7 @@ def get_percent_including_children(p, pmap, ptree):
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
             try:
-                total_percent += pmap[p.pid]
+                total_percent += key(pmap[p.pid])
                 for child in ptree[p.pid]:
                     processes_to_check_stack.append(child)
             except KeyError:
@@ -113,13 +114,16 @@ def get_root_processes(procs):
     return rootprocs
 
 
-def create_process_map(key=lambda p: p.get_memory_percent()):
-    """Creates a dict the mem/cpu percents of each process on the system.
-    Probably faster than calling p.get_percent many many times. I
-    haven't tested it though."""
+def create_process_map():
+    """Creates a dict of the dicts of each process on the system.
+    Probably faster than calling p.get_whatever() many times, and, rather
+    importantly, gives a /snapshot/ of the system's processes at a certain
+    time.
+    """
     map = {}
     for p in psutil.process_iter():
-        map[p.pid] = key(p)
+        map[p.pid] = p.as_dict(
+            attrs=['pid', 'name', 'get_memory_percent', 'get_cpu_percent'])
     return map
 
 
@@ -138,21 +142,19 @@ def create_process_tree():
     return tree
 
 
-def draw_proc(
-        p, ax, start_angle, depth, pmap, ptree,
-        center=(0.5, 0.5)):
+def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key):
     """Returns the arc and bounds of the drawn wedges.
     Bounds are in the form of (top, left, bottom, right)"""
     try:
         r = 0.1 * (depth + 1)
-        p_arc = get_percent_including_children(p, pmap, ptree) / 100 * 360
+        p_arc = get_percent_including_children(p, pmap, ptree, key) / 100 * 360
         w_color = get_color(start_angle + p_arc / 2, depth)
         try:
             name = p.name
         except psutil.AccessDenied:
             name = "ACCESS DENIED"
         wedge = ProcessWedge(
-            name, center, r, start_angle,
+            pmap[p.pid], center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
             linewidth=0.5, edgecolor=(0, 0, 0))
         ax.add_artist(wedge)
@@ -166,11 +168,11 @@ def draw_proc(
             for c in sorted(
                     ptree[p.pid],
                     key=lambda c: get_percent_including_children(c, pmap,
-                                                                 ptree),
+                                                                 ptree, key),
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
                     c, ax, start_angle, depth + 1,
-                    pmap, ptree)
+                    pmap, ptree, center, key)
 
                 # if we successfully drew the child wedge and it returned a
                 # wedge, we can update the window's bounds and the start angle
@@ -219,10 +221,12 @@ def update_bounds(bounds, bounds2):
     return (top, left, bottom, right)
 
 
-def create_graph(cpu_usage=False):
-    """The important function: creates a graph of all processes in the system.
-    If cpu_usage is False, creates a chart of ram usage.
-    If cpu_usage is True, creates a chart of cpu usage.
+def create_graph(type):
+    """
+    The important function: creates a graph of all processes in the system.
+    Types:
+        'ram' -- creates a chart of RAM usage
+        'cpu' -- creates a chart of CPU usage
     """
     procs = psutil.process_iter()
     fig = matplotlib.figure.Figure()
@@ -240,9 +244,9 @@ def create_graph(cpu_usage=False):
     for a in ("left", "right", "top", "bottom"):
         ax.spines[a].set_visible(False)
 
-    if cpu_usage:
+    if type == 'cpu':
         ax.set_title("CPU Usage")
-    else:
+    elif type == 'ram':
         ax.set_title("RAM Usage")
     ax.axis('scaled')
     center = (0.5, 0.5)
@@ -252,31 +256,36 @@ def create_graph(cpu_usage=False):
     angle_so_far = 0
     bounds = (0.5, 0.5, 0.5, 0.5)
 
-    if cpu_usage:
+    # by default, psutil waits 0.1 seconds per get_cpu_percent() call
+    # this is very slow
+    # what we can do is call get_cpu_percent for each process at once,
+    # then wait a bit to measure each process's CPU usage.
+    # after this, p.get_cpu_percent() will return useful values
+    # (even though we aren't calling this directly, it is called in
+    # Process.as_dict(), so this helps)
+    for p in psutil.process_iter():
+        p.get_cpu_percent(interval=0)
+    time.sleep(0.2)
 
-        # by default, psutil waits 0.1 seconds per get_cpu_percent() call
-        # this is very slow
-        # what we can do is call get_cpu_percent for each process at once,
-        # then wait a bit to measure each process's CPU usage.
-        # after this, p.get_cpu_percent() will return useful values
-        for p in psutil.process_iter():
-            p.get_cpu_percent(interval=0)
-        time.sleep(0.2)
+    if type == 'cpu':
 
         # CPU usage total is 100% * NUM_CPUS
-        key = lambda p: p.get_cpu_percent(interval=0) / psutil.NUM_CPUS
-        pmap = create_process_map(key)
-    else:
-        pmap = create_process_map()
+        # so divide by NUM_CPUs to get total percent
+        key = lambda p_dict: p_dict['cpu_percent'] / psutil.NUM_CPUS
 
+    elif type == 'ram':
+        key = lambda p_dict: p_dict['memory_percent']
+
+    pmap = create_process_map()
     ptree = create_process_tree()
+
     for i, p in enumerate(root_procs):
         ws, bounds2 = draw_proc(
-            p, ax, angle_so_far, 0, pmap, ptree, center)
+            p, ax, angle_so_far, 0, pmap, ptree, center, key)
         bounds = update_bounds(bounds, bounds2)
         angle_so_far += ws.arc
 
     ax.set_xlim(bounds[1], bounds[3])
     ax.set_ylim(bounds[2], bounds[0])
 
-    return fig, ax
+    return fig, ax, type

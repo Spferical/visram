@@ -18,6 +18,28 @@ def get_matplotlib_color(wx_color):
     return wx.Colour.GetAsString(wx_color, wx.C2S_HTML_SYNTAX)
 
 
+class ProcessPopup(wx.Frame):
+    def __init__(self, p_dict, *args, **kwargs):
+        wx.Frame.__init__(self, *args, **kwargs)
+        self.text = wx.StaticText(self, -1)
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+        self.sizer.Add(self.text)
+
+        self.update_text(p_dict)
+
+    def get_p_text(self, p_dict):
+        text = "NAME: %s\nPID: %s\n%%MEM:%d\n%%CPU: %d" % (
+            p_dict['name'], p_dict['pid'], p_dict['memory_percent'],
+            p_dict['cpu_percent'])
+        return text
+
+    def update_text(self, p_dict):
+        self.text.SetLabel(self.get_p_text(p_dict))
+        self.sizer.Fit(self)
+
+
 class CanvasPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -29,6 +51,7 @@ class CanvasPanel(wx.Panel):
         self.SetSizer(self.sizer)
 
         self.canvas = None
+        self.popup = None
 
         # sizer to put buttons
         self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -47,12 +70,15 @@ class CanvasPanel(wx.Panel):
 
     def on_button(self, e):
 
-        draw_cpu_usage = (e.GetEventObject() == self.cpu_usage_button)
-        self.start_drawing_chart_in_background(draw_cpu_usage)
+        if e.GetEventObject() == self.cpu_usage_button:
+            chart_type = 'cpu'
+        else:
+            chart_type = 'ram'
+        self.start_drawing_chart_in_background(chart_type)
 
-    def start_drawing_chart_in_background(self, cpu_usage=False):
+    def start_drawing_chart_in_background(self, type='cpu'):
         delayedresult.startWorker(self.draw_chart, chart.create_graph,
-                                  wargs=(cpu_usage,))
+                                  wargs=(type,))
 
         #while we're drawing the chart, disable the buttons for it
         for b in (self.cpu_usage_button, self.mem_usage_button):
@@ -136,9 +162,11 @@ class CanvasPanel(wx.Panel):
                 wx.SYS_COLOUR_INFOBK))
             textcolor = get_matplotlib_color(wx.SystemSettings.GetColour(
                 wx.SYS_COLOUR_INFOTEXT))
+
+            process_name = new_wedge.process_info['name']
             self.text = matplotlib.axes.Axes.text(
                 self.axes,
-                x, y, new_wedge.process_name,
+                x, y, process_name,
                 color=textcolor,
                 bbox=dict(boxstyle="round", fc=bg, ec="none"),
                 figure=self.figure,
@@ -160,11 +188,10 @@ class CanvasPanel(wx.Panel):
         self.canvas.restore_region(self.background)
 
         if self.text:
-             self.text.remove()
-             self.text = None
+            self.text.remove()
+            self.text = None
 
         self.canvas.blit(self.axes.bbox)
-
 
     def on_size(self, event):
         """Removes any text and resizes the canvas when the window is
@@ -207,7 +234,7 @@ class CanvasPanel(wx.Panel):
 
     def draw_chart(self, delayed_result):
         # get the figure and axes
-        (self.figure, self.axes) = delayed_result.get()
+        (self.figure, self.axes, self.chart_type) = delayed_result.get()
 
         # theme the chart appropriately for the system
         self.theme_chart()
@@ -240,11 +267,24 @@ class CanvasPanel(wx.Panel):
         # connect the functions to be called upon certain events
         self.canvas.mpl_connect('motion_notify_event', self.on_move)
         self.canvas.mpl_connect('resize_event', self.on_size)
+        self.canvas.mpl_connect('button_press_event', self.on_mouse_click)
 
         # we finished drawing the chart, so we can now allow the user to
         # refresh it
         for b in (self.mem_usage_button, self.cpu_usage_button):
             b.Enable()
+
+    def on_mouse_click(self, event):
+        if self.selected_wedge:
+            p_dict = self.selected_wedge.process_info
+            if self.popup:
+                self.popup.update_text(p_dict)
+            else:
+                self.popup = ProcessPopup(
+                    p_dict, self,
+                    style=wx.SYSTEM_MENU | wx.CLOSE_BOX |
+                    wx.CAPTION | wx.FRAME_FLOAT_ON_PARENT)
+            self.popup.Show()
 
 
 class VisramFrame(wx.Frame):
