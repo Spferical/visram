@@ -398,7 +398,7 @@ class PreferencesFrame(wx.Frame):
 
         # display a messsage about whether the save was successful
         if self.cfg.Write('theme', theme):
-            message = "Safe successful!"
+            message = "Save successful!"
         else:
             message = "Uh-oh! Save unsuccessful!"
         self.md = wx.MessageDialog(self, message,
