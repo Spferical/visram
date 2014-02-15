@@ -118,7 +118,8 @@ def create_process_map():
     map = {}
     for p in psutil.process_iter():
         map[p.pid] = p.as_dict(
-            attrs=['pid', 'name', 'get_memory_percent', 'get_cpu_percent'])
+            attrs=['pid', 'name', 'get_memory_percent', 'get_cpu_percent'],
+            ad_value="ACCESS DENIED")
     return map
 
 
@@ -145,10 +146,6 @@ def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key,
         r = 0.1 * (depth + 1)
         p_arc = get_percent_including_children(p, pmap, ptree, key) / 100 * 360
         w_color = get_color(start_angle + p_arc / 2, depth, scalar_cmap)
-        try:
-            name = p.name
-        except psutil.AccessDenied:
-            name = "ACCESS DENIED"
         wedge = ProcessWedge(
             pmap[p.pid], depth, center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
