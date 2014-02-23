@@ -128,14 +128,14 @@ def create_process_children_map():
     This is way way way faster than calling psutil.get_children()
     each time we want to iterate on a process's children.
     Indexed by process PID."""
-    tree = {}
+    map = {}
     for p in psutil.process_iter():
-        tree[p.pid] = []
+        map[p.pid] = []
     for p in psutil.process_iter():
         parent = p.parent
         if parent:
-            tree[parent.pid].append(p)
-    return tree
+            map[parent.pid].append(p)
+    return map
 
 
 def draw_proc(p, ax, start_angle, depth, p_dicts, p_childrens, center, key,
