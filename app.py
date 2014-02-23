@@ -124,7 +124,8 @@ class CanvasPanel(wx.Panel):
                     # if we found the hovered-over wedge, we're done!
                     break
 
-        if not wedge_found:
+        # if we didn't find a wedge, clear the current one (if any)
+        if not wedge_found and self.selected_wedge:
             self.clear_selected_wedge()
 
     def update_selected_wedge(self, new_wedge):
