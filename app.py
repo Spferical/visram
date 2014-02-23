@@ -91,7 +91,7 @@ class CanvasPanel(wx.Panel):
         self.start_drawing_chart_in_background(chart_type)
 
     def start_drawing_chart_in_background(self, type='cpu'):
-        delayedresult.startWorker(self.draw_chart, chart.create_graph,
+        delayedresult.startWorker(self.draw_chart, chart.create_chart,
                                   wargs=(type, self.chart_theme))
 
         #while we're drawing the chart, disable the buttons for it

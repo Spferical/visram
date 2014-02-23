@@ -78,7 +78,7 @@ class ProcessWedge(Wedge):
         return False
 
 
-def get_percent_including_children(p, pmap, ptree, key):
+def get_percent_including_children(p, p_dicts, p_childrens, key):
     """Gets the percent of RAM/CPU a process is using, including that used by
     all of its children."""
     try:
@@ -88,12 +88,12 @@ def get_percent_including_children(p, pmap, ptree, key):
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
             try:
-                total_percent += key(pmap[p.pid])
-                for child in ptree[p.pid]:
+                total_percent += key(p_dicts[p.pid])
+                for child in p_childrens[p.pid]:
                     processes_to_check_stack.append(child)
             except KeyError:
                 # processes are pretty unstable
-                # and may not have been put in ptree or pmap
+                # and may not have been put in p_childrens or p_dicts
                 pass
         return total_percent
     except psutil.NoSuchProcess:
@@ -109,7 +109,7 @@ def get_root_processes(procs):
     return rootprocs
 
 
-def create_process_map():
+def create_process_dict_map():
     """Creates a dict of the dicts of each process on the system.
     Probably faster than calling p.get_whatever() many times, and, rather
     importantly, gives a /snapshot/ of the system's processes at a certain
@@ -123,7 +123,7 @@ def create_process_map():
     return map
 
 
-def create_process_tree():
+def create_process_children_map():
     """Creates a dict of the children of each process in the system.
     This is way way way faster than calling psutil.get_children()
     each time we want to iterate on a process's children.
@@ -138,16 +138,17 @@ def create_process_tree():
     return tree
 
 
-def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key,
+def draw_proc(p, ax, start_angle, depth, p_dicts, p_childrens, center, key,
               scalar_cmap):
     """Returns the arc and bounds of the drawn wedges.
     Bounds are in the form of (top, left, bottom, right)"""
     try:
         r = 0.1 * (depth + 1)
-        p_arc = get_percent_including_children(p, pmap, ptree, key) / 100 * 360
+        p_arc = get_percent_including_children(p, p_dicts, p_childrens, key)\
+            / 100 * 360
         w_color = get_color(start_angle + p_arc / 2, depth, scalar_cmap)
         wedge = ProcessWedge(
-            pmap[p.pid], depth, center, r, start_angle,
+            p_dicts[p.pid], depth, center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
             linewidth=0.5, edgecolor=(0, 0, 0))
         ax.add_artist(wedge)
@@ -159,13 +160,13 @@ def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key,
         # (this lets the user focus on the big processes more easily)
         try:
             for c in sorted(
-                    ptree[p.pid],
-                    key=lambda c: get_percent_including_children(c, pmap,
-                                                                 ptree, key),
+                    p_childrens[p.pid],
+                    key=lambda c: get_percent_including_children(
+                        c, p_dicts, p_childrens, key),
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
                     c, ax, start_angle, depth + 1,
-                    pmap, ptree, center, key, scalar_cmap)
+                    p_dicts, p_childrens, center, key, scalar_cmap)
 
                 # if we successfully drew the child wedge and it returned a
                 # wedge, we can update the window's bounds and the start angle
@@ -176,7 +177,7 @@ def draw_proc(p, ax, start_angle, depth, pmap, ptree, center, key,
 
         except KeyError:
             # processes are pretty unstable
-            # and may not have been put in ptree or pmap
+            # and may not have been put in p_childrens or p_dicts
             pass
 
         return wedge, bounds
@@ -214,7 +215,7 @@ def update_bounds(bounds, bounds2):
     return (top, left, bottom, right)
 
 
-def create_graph(type, theme):
+def create_chart(type, theme):
     """
     The important function: creates a graph of all processes in the system.
     Types:
@@ -277,12 +278,13 @@ def create_graph(type, theme):
     elif type == 'ram':
         key = lambda p_dict: p_dict['memory_percent']
 
-    pmap = create_process_map()
-    ptree = create_process_tree()
+    p_dicts = create_process_dict_map()
+    p_childrens = create_process_children_map()
 
     for i, p in enumerate(root_procs):
         ws, bounds2 = draw_proc(
-            p, ax, angle_so_far, 0, pmap, ptree, center, key, scalar_map)
+            p, ax, angle_so_far, 0, p_dicts, p_childrens, center, key,
+            scalar_map)
         bounds = update_bounds(bounds, bounds2)
         angle_so_far += ws.arc
 
