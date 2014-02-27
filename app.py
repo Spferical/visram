@@ -32,9 +32,11 @@ class ProcessPopup(wx.Frame):
         self.update_text(p_dict)
 
     def get_p_text(self, p_dict):
-        text = "NAME: %s\nPID: %s\n%%MEM:%d\n%%CPU: %d" % (
-            p_dict['name'], p_dict['pid'], p_dict['memory_percent'],
-            p_dict['cpu_percent'])
+        text = '\n'.join((
+            'Name: %s' % p_dict['name'],
+            'PID: %s' % p_dict['pid'],
+            'CPU usage: %s%%' % '{:.2f}'.format(p_dict['cpu_percent']),
+            'RAM usage: %s%%' % '{:.2f}'.format(p_dict['memory_percent'])))
         return text
 
     def update_text(self, p_dict):
