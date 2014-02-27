@@ -302,10 +302,17 @@ class CanvasPanel(wx.Panel):
             self.popup.Show()
 
     def _on_colortheme_change(self, chart_theme):
-        """Sets the colortheme value and recolors the chart, if any."""
+        """Sets the colortheme value and recolors the chart, if any.
+        Removes and deletes hover text, if any."""
         self.chart_theme = chart_theme
 
         if self.canvas:
+            # remove the text from the figure (if any)
+            # otherwise, it can get in the background image
+            if self.text:
+                self.text.remove()
+                self.text = None
+
             chart.recolor(self.figure, self.axes, chart_theme)
             self.canvas.draw()
             self.background = self.canvas.copy_from_bbox(self.axes.bbox)
