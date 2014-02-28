@@ -119,7 +119,7 @@ def create_process_dict_map():
     for p in psutil.process_iter():
         map[p.pid] = p.as_dict(
             attrs=['pid', 'name', 'get_memory_percent', 'get_cpu_percent',
-                'username', 'get_memory_info'],
+                   'username', 'get_memory_info'],
             ad_value="ACCESS DENIED")
     return map
 

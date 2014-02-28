@@ -27,7 +27,7 @@ def sizeof_fmt(num):
     a maximum of TBs.
     Thanks to stackoverflow.com/questions/1094841.
     """
-    for x in ['bytes','KB','MB','GB']:
+    for x in ['bytes', 'KB', 'MB', 'GB']:
         if num < 1024.0:
             return "%3.1f%s" % (num, x)
         num /= 1024.0
