@@ -3,3 +3,13 @@ Hover-on-parent action as in baobab
     When the user hovers the mouse over a process wedge long enough, the
     titles of the major children of that process should appear (if space
     is available).
+
+Only show appropriate colormaps in themes menu
+
+    see http://matplotlib.org/examples/color/colormaps_reference.html
+
+    Just the 'Qualitative' and 'Miscellaneous' colormaps would be good
+
+Make process popup window look nicer
+
+    HTML styling, or showing everything in a table
