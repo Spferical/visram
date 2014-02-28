@@ -20,6 +20,20 @@ def get_matplotlib_color(wx_color):
     return wx.Colour.GetAsString(wx_color, wx.C2S_HTML_SYNTAX)
 
 
+def sizeof_fmt(num):
+    """
+    Returns a number of bytes in a more human-readable form.
+    Scaled to the nearest unit that there are less than 1024 of, up to
+    a maximum of TBs.
+    Thanks to stackoverflow.com/questions/1094841.
+    """
+    for x in ['bytes','KB','MB','GB']:
+        if num < 1024.0:
+            return "%3.1f%s" % (num, x)
+        num /= 1024.0
+    return "%3.1f%s" % (num, 'TB')
+
+
 class ProcessPopup(wx.Frame):
     def __init__(self, p_dict, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
@@ -35,8 +49,10 @@ class ProcessPopup(wx.Frame):
         text = '\n'.join((
             'Name: %s' % p_dict['name'],
             'PID: %s' % p_dict['pid'],
-            'CPU usage: %s%%' % '{:.2f}'.format(p_dict['cpu_percent']),
-            'RAM usage: %s%%' % '{:.2f}'.format(p_dict['memory_percent'])))
+            'CPU percent: %s%%' % '{:.2f}'.format(p_dict['cpu_percent']),
+            'Memory percent: %s%%' % '{:.2f}'.format(p_dict['memory_percent']),
+            'Memory usage: %s' % sizeof_fmt(p_dict['memory_info'][0]),
+            'Owner: %s' % p_dict['username']))
         return text
 
     def update_text(self, p_dict):
