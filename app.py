@@ -37,11 +37,15 @@ def sizeof_fmt(num):
 class ProcessPopup(wx.Frame):
     def __init__(self, p_dict, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
-        self.text = wx.StaticText(self, -1)
 
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self.sizer)
-        self.sizer.Add(self.text)
+        # put everything in a Panel so the background isn't gray on Windows
+        self.panel = wx.Panel(self)
+
+        self.text = wx.StaticText(self.panel, -1)
+
+        self.panel.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(self.panel.sizer)
+        self.panel.sizer.Add(self.text)
 
         self.update_text(p_dict)
 
@@ -57,7 +61,7 @@ class ProcessPopup(wx.Frame):
 
     def update_text(self, p_dict):
         self.text.SetLabel(self.get_p_text(p_dict))
-        self.sizer.Fit(self)
+        self.panel.sizer.Fit(self)
 
 
 class CanvasPanel(wx.Panel):
@@ -391,24 +395,27 @@ class PreferencesFrame(wx.Frame):
         kwargs['title'] = "Visram Preferences"
         wx.Frame.__init__(self, *args, **kwargs)
 
+        # put everything in a Panel so the background isn't gray on Windows
+        self.panel = wx.Panel(self)
+
         # text and combobox for setting theme
-        self.theme_label = wx.StaticText(self, -1, "Color Scheme")
+        self.theme_label = wx.StaticText(self.panel, -1, "Color Scheme")
         self.theme_combobox = wx.ComboBox(
-            self, -1, style=wx.CB_READONLY | wx.CB_SORT, value=theme,
+            self.panel, -1, style=wx.CB_READONLY | wx.CB_SORT, value=theme,
             choices=matplotlib.cm.cmap_d.keys())
 
         # button for saving preferences
-        self.save_button = wx.Button(self, 1, "Save settings")
+        self.save_button = wx.Button(self.panel, 1, "Save settings")
         self.save_button.Bind(wx.EVT_BUTTON, self.on_save,
                               self.save_button)
 
         # sizer stuff
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self.sizer)
-        self.sizer.Add(self.theme_label)
-        self.sizer.Add(self.theme_combobox, 1)
-        self.sizer.Add(self.save_button, 1)
-        self.sizer.Fit(self)
+        self.panel.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(self.panel.sizer)
+        self.panel.sizer.Add(self.theme_label)
+        self.panel.sizer.Add(self.theme_combobox, 1)
+        self.panel.sizer.Add(self.save_button, 1)
+        self.panel.sizer.Fit(self)
 
         self.Bind(wx.EVT_COMBOBOX, self.on_colortheme_pick,
                   self.theme_combobox)
