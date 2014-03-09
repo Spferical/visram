@@ -151,7 +151,7 @@ def draw_proc(p, ax, start_angle, depth, p_dicts, p_childrens, center, key,
         wedge = ProcessWedge(
             p_dicts[p.pid], depth, center, r, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
-            linewidth=0)
+            linewidth=.25)
         ax.add_artist(wedge)
 
         bounds = wedge.get_bounds()
