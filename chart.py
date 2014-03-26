@@ -104,7 +104,7 @@ def get_root_processes(procs):
     """Gets all processes in the system that have no parents."""
     rootprocs = []
     for proc in procs:
-        if not proc.parent:
+        if not proc.parent():
             rootprocs.append(proc)
     return rootprocs
 
@@ -133,7 +133,7 @@ def create_process_children_map():
     for p in psutil.process_iter():
         map[p.pid] = []
     for p in psutil.process_iter():
-        parent = p.parent
+        parent = p.parent()
         if parent:
             map[parent.pid].append(p)
     return map
