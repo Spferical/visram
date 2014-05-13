@@ -89,7 +89,7 @@ def get_percent_including_children(p, p_dicts, p_childrens, key):
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
             try:
-                total_percent = key(p_dicts[p.pid])
+                total_percent += key(p_dicts[p.pid])
                 for child in p_childrens[p.pid]:
                     processes_to_check_stack.append(child)
             except KeyError:
