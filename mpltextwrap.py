@@ -1,25 +1,5 @@
-# From https://stackoverflow.com/questions/4018860/text-box-in-matplotlib
-import matplotlib.pyplot as plt
+# Adapted from https://stackoverflow.com/questions/4018860/text-box-in-matplotlib
 from math import sin, cos, radians
-
-
-def main():
-    fig = plt.figure()
-    plt.axis([0, 10, 0, 10])
-
-    t = "This is a really long string that I'd rather have wrapped so that it"\
-        " doesn't go outside of the figure, but if it's long enough it will"\
-        " go off the top or bottom!"
-    plt.text(4, 1, t, ha='left', rotation=15)
-    plt.text(5, 3.5, t, ha='right', rotation=-15)
-    plt.text(5, 10, t, fontsize=18, ha='center', va='top')
-    plt.text(3, 0, t, family='serif', style='italic', ha='right')
-    plt.title("This is a really long title that I want to have wrapped so it"
-              " does not go outside the figure boundaries", ha='center')
-
-    # Now make the text auto-wrap...
-    fig.canvas.mpl_connect('draw_event', on_draw)
-    plt.show()
 
 
 def on_draw(event):
