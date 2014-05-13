@@ -276,7 +276,7 @@ def create_chart(type, theme):
         try:
             p.get_cpu_percent(interval=0)
         except psutil.AccessDenied:
-            pass # just skip processes we can't read
+            pass  # just skip processes we can't read
     time.sleep(0.2)
 
     if type == 'cpu':

@@ -58,7 +58,7 @@ class ProcessPopup(wx.Frame):
         owner = p_dict['username']
 
         if cpu_percent != 'ACCESS DENIED':
-            cpu_percent ='{:.2f}'.format(cpu_percent)
+            cpu_percent = '{:.2f}'.format(cpu_percent)
         if memory_percent != 'ACCESS DENIED':
             memory_percent = '{:.2f}'.format(p_dict['memory_percent']),
         if memory_usage != 'ACCESS DENIED':
@@ -114,7 +114,7 @@ class CanvasPanel(wx.Panel):
                                    self.mem_usage_button)
         self.button_sizer.Add(self.cpu_usage_button, 1, wx.ALIGN_RIGHT)
 
-        #subscribe to colortheme change events
+        # subscribe to colortheme change events
         pub.subscribe(self._on_colortheme_change, 'colortheme.change')
 
     def on_button(self, e):
@@ -130,7 +130,7 @@ class CanvasPanel(wx.Panel):
         delayedresult.startWorker(self.draw_chart, chart.create_chart,
                                   wargs=(type, self.chart_theme))
 
-        #while we're drawing the chart, disable the buttons for it
+        # while we're drawing the chart, disable the buttons for it
         for b in (self.cpu_usage_button, self.mem_usage_button):
             b.Disable()
 
@@ -295,7 +295,7 @@ class CanvasPanel(wx.Panel):
             self.sizer.Remove(self.canvas)
             self.canvas.Destroy()
 
-        #create the canvas
+        # create the canvas
         self.canvas = FigureCanvas(self, -1, self.figure)
 
         # add the canvas to our sizer
@@ -379,7 +379,7 @@ class VisramFrame(wx.Frame):
 
         self.SetMenuBar(menu_bar)
 
-        #create the canvas panel and lay it out
+        # create the canvas panel and lay it out
         self.canvas_panel = CanvasPanel(self)
         self.canvas_panel.Layout()
 
