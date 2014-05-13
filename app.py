@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import matplotlib
-
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 import wx
@@ -8,11 +7,12 @@ from wx.lib import delayedresult
 from wx.lib.pubsub import setupkwargs
 from wx.lib.pubsub import pub
 
-import mpltextwrap
-
 import math
+import locale
+from functools import cmp_to_key
 
 import chart
+import mpltextwrap
 
 
 def get_matplotlib_color(wx_color):
@@ -415,8 +415,10 @@ class PreferencesFrame(wx.Frame):
         # text and combobox for setting theme
         self.theme_label = wx.StaticText(self.panel, -1, "Color Scheme")
         self.theme_combobox = wx.ComboBox(
-            self.panel, -1, style=wx.CB_READONLY | wx.CB_SORT, value=theme,
-            choices=matplotlib.cm.cmap_d.keys())
+            self.panel, -1, style=wx.CB_READONLY, value=theme,
+            # sort the choices based on the current locale
+            choices=sorted(matplotlib.cm.cmap_d.keys(),
+                           key=cmp_to_key(locale.strcoll)))
 
         # button for saving preferences
         self.save_button = wx.Button(self.panel, 1, "Save settings")
