@@ -2,9 +2,10 @@
 import psutil
 import matplotlib
 from matplotlib.patches import Wedge
-import math
 from matplotlib import colors
 import matplotlib.cm as cmx
+import matplotlib.figure
+import math
 import time
 
 
@@ -88,7 +89,7 @@ def get_percent_including_children(p, p_dicts, p_childrens, key):
         while processes_to_check_stack:
             p = processes_to_check_stack.pop()
             try:
-                total_percent += key(p_dicts[p.pid])
+                total_percent = key(p_dicts[p.pid])
                 for child in p_childrens[p.pid]:
                     processes_to_check_stack.append(child)
             except KeyError:
@@ -104,7 +105,10 @@ def get_root_processes(procs):
     """Gets all processes in the system that have no parents."""
     rootprocs = []
     for proc in procs:
-        if not proc.parent:
+        # processes without parents are root processes
+        # WORKAROUND FOR OSX: pid 0's parent is itself, so we need to check
+        # if a process's parent is itself
+        if not proc.parent() or proc.parent().pid == proc.pid:
             rootprocs.append(proc)
     return rootprocs
 
@@ -133,8 +137,10 @@ def create_process_children_map():
     for p in psutil.process_iter():
         map[p.pid] = []
     for p in psutil.process_iter():
-        parent = p.parent
-        if parent:
+        parent = p.parent()
+        # in OSX, the process with PID=0 is it's own parent. We need to check
+        # for recursive relationships like this to prevent infinite recursion.
+        if parent and parent.pid != p.pid:
             map[parent.pid].append(p)
     return map
 
@@ -267,17 +273,32 @@ def create_chart(type, theme):
     # (even though we aren't calling this directly, it is called in
     # Process.as_dict(), so this helps)
     for p in psutil.process_iter():
-        p.get_cpu_percent(interval=0)
+        try:
+            p.get_cpu_percent(interval=0)
+        except psutil.AccessDenied:
+            pass # just skip processes we can't read
     time.sleep(0.2)
 
     if type == 'cpu':
+        def key(p_dict):
+            # first check if we can access it
+            percent = p_dict['cpu_percent']
+            if percent == 'ACCESS DENIED':
+                return 0
 
-        # CPU usage total is 100% * NUM_CPUS
-        # so divide by NUM_CPUs to get total percent
-        key = lambda p_dict: p_dict['cpu_percent'] / psutil.NUM_CPUS
+            # CPU usage total is 100% * NUM_CPUS
+            # so divide by NUM_CPUs to get total percent
+            return percent / psutil.cpu_count()
 
     elif type == 'ram':
-        key = lambda p_dict: p_dict['memory_percent']
+        def key(p_dict):
+            # return 0 if we can't access it
+            percent = p_dict['memory_percent']
+            if percent == 'ACCESS DENIED':
+                return 0
+
+            # else return it
+            return percent
 
     p_dicts = create_process_dict_map()
     p_childrens = create_process_children_map()

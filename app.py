@@ -50,13 +50,27 @@ class ProcessPopup(wx.Frame):
         self.update_text(p_dict)
 
     def get_p_text(self, p_dict):
+        name = p_dict['name']
+        pid = p_dict['pid']
+        cpu_percent = p_dict['cpu_percent']
+        memory_percent = p_dict['memory_percent']
+        memory_usage = p_dict['memory_info']
+        owner = p_dict['username']
+
+        if cpu_percent != 'ACCESS DENIED':
+            cpu_percent ='{:.2f}'.format(cpu_percent)
+        if memory_percent != 'ACCESS DENIED':
+            memory_percent = '{:.2f}'.format(p_dict['memory_percent']),
+        if memory_usage != 'ACCESS DENIED':
+            memory_usage = sizeof_fmt(memory_usage[0])
+
         text = '\n'.join((
-            'Name: %s' % p_dict['name'],
-            'PID: %s' % p_dict['pid'],
-            'CPU percent: %s%%' % '{:.2f}'.format(p_dict['cpu_percent']),
-            'Memory percent: %s%%' % '{:.2f}'.format(p_dict['memory_percent']),
-            'Memory usage: %s' % sizeof_fmt(p_dict['memory_info'][0]),
-            'Owner: %s' % p_dict['username']))
+            'Name: %s' % name,
+            'PID: %s' % pid,
+            'CPU percent: %s' % cpu_percent,
+            'Memory percent: %s' % memory_percent,
+            'Memory usage: %s' % memory_usage,
+            'Owner: %s' % owner))
         return text
 
     def update_text(self, p_dict):
