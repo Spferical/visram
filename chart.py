@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 import psutil
 import matplotlib
 from matplotlib.patches import Wedge

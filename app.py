@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
 import matplotlib
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
