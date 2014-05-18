@@ -12,4 +12,4 @@ Visram is a graphical visualizer for one's RAM usage. It shows RAM (and CPU) usa
 - psutil
 
 #Usage
-`$ python2 app.py`
+`$ visram`
