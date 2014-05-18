@@ -25,5 +25,6 @@ setup(name='visram',
           'Operating System :: MacOS :: MacOS X',
           'Operating System :: Microsoft :: Windows',
           'Programming Language :: Python :: 2 :: Only',
+          'Topic :: System :: Monitoring',
           ],
      )
