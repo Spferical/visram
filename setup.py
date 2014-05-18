@@ -10,6 +10,7 @@ setup(name='visram',
       author_email='spferical@gmail.com',
       url='http://github.com/Spferical/visram',
       packages=['visram', 'visram.test'],
+      install_requires=['wxPython', 'matplotlib', 'psutil'],
       scripts=['bin/visram'],
       platforms=['any'],
       classifiers=[
