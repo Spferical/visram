@@ -13,7 +13,7 @@ setup(name='visram',
       scripts=['bin/visram'],
       platforms=['any'],
       classifiers=[
-          'Development Status :: 4 - Beta',
+          'Development Status :: 3 - Alpha',
           'Environment :: X11 Applications',
           'Environment :: MacOS X :: Cocoa',
           'Environment :: Win32 (MS Windows)',
