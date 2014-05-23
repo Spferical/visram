@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
+"""Setup file for Visram"""
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='visram',
@@ -10,9 +11,10 @@ setup(
     author='Matthew Pfeiffer',
     author_email='spferical@gmail.com',
     url='http://github.com/Spferical/visram',
-    packages=['visram', 'visram.test'],
+    packages=['visram', 'visram.tests'],
     install_requires=['wxPython', 'matplotlib', 'psutil'],
     scripts=['bin/visram'],
+    test_suite='visram.tests',
     platforms=['any'],
     classifiers=[
         'Development Status :: 3 - Alpha',
