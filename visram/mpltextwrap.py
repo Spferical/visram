@@ -1,4 +1,5 @@
-# Adapted from https://stackoverflow.com/questions/4018860/text-box-in-matplotlib
+# Adapted from
+# https://stackoverflow.com/questions/4018860/text-box-in-matplotlib
 from math import sin, cos, radians
 
 

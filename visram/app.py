@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+"""GUI portion of Visram."""
 import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
@@ -11,12 +12,12 @@ import math
 import locale
 from functools import cmp_to_key
 
-import chart
-import mpltextwrap
+from visram import chart
+from visram import mpltextwrap
 
 
 def get_matplotlib_color(wx_color):
-    # matplotlib can read strings in this syntax
+    """Returns a wx.Colour in a format that matplotlib can read."""
     return wx.Colour.GetAsString(wx_color, wx.C2S_HTML_SYNTAX)
 
 
@@ -27,14 +28,45 @@ def sizeof_fmt(num):
     a maximum of TBs.
     Thanks to stackoverflow.com/questions/1094841.
     """
-    for x in ['bytes', 'KB', 'MB', 'GB']:
+    for unit in ['bytes', 'KB', 'MB', 'GB']:
         if num < 1024.0:
-            return "%3.1f%s" % (num, x)
+            return "%3.1f%s" % (num, unit)
         num /= 1024.0
     return "%3.1f%s" % (num, 'TB')
 
 
+def get_p_text(p_dict):
+    """Returns a textual description of a process.
+    Includes various info, including name, PID, CPU/RAM usage, etc.
+    Includes name, PID, CPU percent, memory percent, memory usage, and the
+    process's owner.
+    """
+    name = p_dict['name']
+    pid = p_dict['pid']
+    cpu_percent = p_dict['cpu_percent']
+    memory_percent = p_dict['memory_percent']
+    memory_usage = p_dict['memory_info']
+    owner = p_dict['username']
+
+    if cpu_percent != 'ACCESS DENIED':
+        cpu_percent = '{:.2f}'.format(cpu_percent)
+    if memory_percent != 'ACCESS DENIED':
+        memory_percent = '{:.2f}'.format(p_dict['memory_percent']),
+    if memory_usage != 'ACCESS DENIED':
+        memory_usage = sizeof_fmt(memory_usage[0])
+
+    text = '\n'.join((
+        'Name: %s' % name,
+        'PID: %s' % pid,
+        'CPU percent: %s' % cpu_percent,
+        'Memory percent: %s' % memory_percent,
+        'Memory usage: %s' % memory_usage,
+        'Owner: %s' % owner))
+    return text
+
+
 class ProcessPopup(wx.Frame):
+    """Poopup that displays info about a process."""
     def __init__(self, p_dict, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
 
@@ -49,36 +81,14 @@ class ProcessPopup(wx.Frame):
 
         self.update_text(p_dict)
 
-    def get_p_text(self, p_dict):
-        name = p_dict['name']
-        pid = p_dict['pid']
-        cpu_percent = p_dict['cpu_percent']
-        memory_percent = p_dict['memory_percent']
-        memory_usage = p_dict['memory_info']
-        owner = p_dict['username']
-
-        if cpu_percent != 'ACCESS DENIED':
-            cpu_percent = '{:.2f}'.format(cpu_percent)
-        if memory_percent != 'ACCESS DENIED':
-            memory_percent = '{:.2f}'.format(p_dict['memory_percent']),
-        if memory_usage != 'ACCESS DENIED':
-            memory_usage = sizeof_fmt(memory_usage[0])
-
-        text = '\n'.join((
-            'Name: %s' % name,
-            'PID: %s' % pid,
-            'CPU percent: %s' % cpu_percent,
-            'Memory percent: %s' % memory_percent,
-            'Memory usage: %s' % memory_usage,
-            'Owner: %s' % owner))
-        return text
-
     def update_text(self, p_dict):
-        self.text.SetLabel(self.get_p_text(p_dict))
+        """Updates the text on the popup based on the process's dict."""
+        self.text.SetLabel(get_p_text(p_dict))
         self.panel.sizer.Fit(self)
 
 
 class CanvasPanel(wx.Panel):
+    """Panel containing the canvas for the chart."""
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -90,6 +100,16 @@ class CanvasPanel(wx.Panel):
 
         self.canvas = None
         self.popup = None
+
+        # variables for manipulating the canvas
+        self.text = None
+        self.selected_wedge = None
+
+        self.figure = None
+        self.axes = None
+        self.chart_type = None
+
+        self.background = None
 
         # get theme from config if available
         # or default to 'spectral' theme
@@ -117,22 +137,27 @@ class CanvasPanel(wx.Panel):
         # subscribe to colortheme change events
         pub.subscribe(self._on_colortheme_change, 'colortheme.change')
 
-    def on_button(self, e):
+    def on_button(self, event):
+        """Runs when a button is pressed.
+        Based on the button, decides what chart to draw, and starts drawing
+        it."""
 
-        if e.GetEventObject() == self.cpu_usage_button:
+        if event.GetEventObject() == self.cpu_usage_button:
             chart_type = 'cpu'
         else:
             chart_type = 'ram'
 
-        self.start_drawing_chart_in_background(chart_type)
+        self.start_drawing_chart(chart_type)
 
-    def start_drawing_chart_in_background(self, type='cpu'):
+    def start_drawing_chart(self, chart_type='cpu'):
+        """Starts drawing the chart in the background, using delayedresult.
+        Disables the buttons for it, too."""
         delayedresult.startWorker(self.draw_chart, chart.create_chart,
-                                  wargs=(type, self.chart_theme))
+                                  wargs=(chart_type, self.chart_theme))
 
         # while we're drawing the chart, disable the buttons for it
-        for b in (self.cpu_usage_button, self.mem_usage_button):
-            b.Disable()
+        for button in (self.cpu_usage_button, self.mem_usage_button):
+            button.Disable()
 
     def on_move(self, event):
         """To be called when the user moves the mouse.
@@ -145,15 +170,15 @@ class CanvasPanel(wx.Panel):
 
             # go through each wedge in the graph, checking to see if it
             # contains the mouse event
-            xd, yd = event.xdata - 0.5, event.ydata - 0.5
-            angle = math.degrees(math.atan2(yd, xd))
-            r = math.sqrt(xd ** 2 + yd ** 2)
-            for c in self.axes.get_children():
-                if isinstance(c, chart.ProcessWedge) and \
-                        c.contains_polar(r, angle):
+            xdata, ydata = event.xdata - 0.5, event.ydata - 0.5
+            angle = math.degrees(math.atan2(ydata, xdata))
+            radius = math.sqrt(xdata ** 2 + ydata ** 2)
+            for child in self.axes.get_children():
+                if isinstance(child, chart.ProcessWedge) and \
+                        child.contains_polar(radius, angle):
 
                     # update the display
-                    self.update_selected_wedge(c)
+                    self.update_selected_wedge(child)
 
                     wedge_found = True
 
@@ -165,13 +190,13 @@ class CanvasPanel(wx.Panel):
             self.clear_selected_wedge()
 
     def update_selected_wedge(self, new_wedge):
-
-        # erase the old process name text and
-        # draw it for the currently-selected process
+        """Erases the old process name text and draws it for the
+        currently-selected process.
+        """
         if self.selected_wedge != new_wedge:
 
             self.selected_wedge = new_wedge
-            (x, y) = new_wedge.get_shape_center()
+            (wedge_x, wedge_y) = new_wedge.get_shape_center()
             self.canvas.restore_region(self.background)
 
             # figure out how to justify the text
@@ -189,27 +214,27 @@ class CanvasPanel(wx.Panel):
             # e.g. text in the left-most 1/3 is left-justified
 
             # horizontal justifying
-            if (x < left + width / 3):
-                ha = 'left'
-            elif x > right - width / 3:
-                ha = 'right'
+            if wedge_x < left + width / 3:
+                horizontal_alignment = 'left'
+            elif wedge_x > right - width / 3:
+                horizontal_alignment = 'right'
             else:
-                ha = 'center'
+                horizontal_alignment = 'center'
 
             # vertical justifying
-            if y < bottom + height / 3:
-                va = 'bottom'
-            elif y > top - height / 3:
-                va = 'top'
+            if wedge_y < bottom + height / 3:
+                vertical_alignment = 'bottom'
+            elif wedge_y > top - height / 3:
+                vertical_alignment = 'top'
             else:
-                va = 'center'
+                vertical_alignment = 'center'
 
             # remove the previous text, if any, and add some new
             # text to the chart
             if self.text:
                 self.text.remove()
 
-            bg = get_matplotlib_color(wx.SystemSettings.GetColour(
+            face_color = get_matplotlib_color(wx.SystemSettings.GetColour(
                 wx.SYS_COLOUR_INFOBK))
             textcolor = get_matplotlib_color(wx.SystemSettings.GetColour(
                 wx.SYS_COLOUR_INFOTEXT))
@@ -217,12 +242,12 @@ class CanvasPanel(wx.Panel):
             process_name = new_wedge.process_info['name']
             self.text = matplotlib.axes.Axes.text(
                 self.axes,
-                x, y, process_name,
+                wedge_x, wedge_y, process_name,
                 color=textcolor,
-                bbox=dict(boxstyle="round", fc=bg, ec="none"),
+                bbox=dict(boxstyle="round", fc=face_color, ec="none"),
                 figure=self.figure,
-                ha=ha,
-                va=va
+                ha=horizontal_alignment,
+                va=vertical_alignment
                 )
 
             # autowrap the text
@@ -233,6 +258,10 @@ class CanvasPanel(wx.Panel):
             self.canvas.blit(self.axes.bbox)
 
     def clear_selected_wedge(self):
+        """Sets the selected wedge to None, restores the background of the
+        canvas (erasing anything else), removes the text, if any, and blits the
+        result to the canvas.
+        """
         self.selected_wedge = None
 
         # restore the empty chart
@@ -246,7 +275,8 @@ class CanvasPanel(wx.Panel):
 
     def on_size(self, event):
         """Removes any text and resizes the canvas when the window is
-        resized."""
+        resized.
+        """
 
         # remove any text that exists so that it won't be drawn on the
         # new background
@@ -284,6 +314,10 @@ class CanvasPanel(wx.Panel):
                 wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)))
 
     def draw_chart(self, delayed_result):
+        """Gets the chart from the delayed result, themes it, and replaces the
+        old canvas with a new one for the new chart. Enables the buttons for
+        drawing subsequent charts.
+        """
         # get the figure and axes
         (self.figure, self.axes, self.chart_type) = delayed_result.get()
 
@@ -308,10 +342,6 @@ class CanvasPanel(wx.Panel):
         # lay out the thing so the canvas will be drawn in the right area
         self.Layout()
 
-        # initialize variables for manipulating the canvas
-        self.text = None
-        self.selected_wedge = None
-
         # initially draw the canvas and copy it to a background object
         self.on_size(None)
 
@@ -322,10 +352,14 @@ class CanvasPanel(wx.Panel):
 
         # we finished drawing the chart, so we can now allow the user to
         # refresh it
-        for b in (self.mem_usage_button, self.cpu_usage_button):
-            b.Enable()
+        for button in (self.mem_usage_button, self.cpu_usage_button):
+            button.Enable()
 
     def on_mouse_click(self, event):
+        """Runs on mouse click.
+        If a wedge is selected, opens a ProcessPopup for the wedge's
+        process.
+        """
         if self.selected_wedge:
             p_dict = self.selected_wedge.process_info
             if self.popup:
@@ -349,13 +383,15 @@ class CanvasPanel(wx.Panel):
                 self.text.remove()
                 self.text = None
 
-            chart.recolor(self.figure, self.axes, chart_theme)
+            chart.recolor(self.axes, chart_theme)
             self.canvas.draw()
             self.background = self.canvas.copy_from_bbox(self.axes.bbox)
 
 
 class VisramFrame(wx.Frame):
-
+    """Frame that contains the menu bar, preferences window, and the canvas
+    panel.
+    """
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
 
@@ -363,17 +399,17 @@ class VisramFrame(wx.Frame):
         menu_bar = wx.MenuBar()
         file_menu = wx.Menu()
 
-        exit = file_menu.Append(wx.ID_EXIT, "Exit",
-                                "Close window and exit program.")
+        exit_menu = file_menu.Append(wx.ID_EXIT, "Exit",
+                                     "Close window and exit program.")
         menu_bar.Append(file_menu, "&File")
 
         edit_menu = wx.Menu()
-        preferences = edit_menu.Append(wx.ID_PREFERENCES, "Preferences",
-                                       "Edit the colors, etc.")
+        preferences_menu = edit_menu.Append(wx.ID_PREFERENCES, "Preferences",
+                                            "Edit the colors, etc.")
         menu_bar.Append(edit_menu, "&Edit")
 
-        self.Bind(wx.EVT_MENU, self.on_close, exit)
-        self.Bind(wx.EVT_MENU, self.on_preferences, preferences)
+        self.Bind(wx.EVT_MENU, self.on_close, exit_menu)
+        self.Bind(wx.EVT_MENU, self.on_preferences, preferences_menu)
 
         self.prefs = None
 
@@ -383,10 +419,11 @@ class VisramFrame(wx.Frame):
         self.canvas_panel = CanvasPanel(self)
         self.canvas_panel.Layout()
 
-    def on_close(self, e):
+    def on_close(self, event):
+        """Closes the window."""
         self.Close()
 
-    def on_preferences(self, e):
+    def on_preferences(self, event):
         """Shows a preferences window if not already shown."""
         if not self.prefs:
             self.prefs = PreferencesFrame(
@@ -396,6 +433,10 @@ class VisramFrame(wx.Frame):
 
 
 class PreferencesFrame(wx.Frame):
+    """Frame for management of a user's preferences.
+    For now, contains a combobox for color theme selection and a button for
+    saving.
+    """
     def __init__(self, *args, **kwargs):
 
         # get the current config settings
@@ -436,12 +477,14 @@ class PreferencesFrame(wx.Frame):
         self.Bind(wx.EVT_COMBOBOX, self.on_colortheme_pick,
                   self.theme_combobox)
 
-    def on_colortheme_pick(self, e):
+        self.message_dialog = None
+
+    def on_colortheme_pick(self, event):
         """Sends a message when colortheme changes."""
         pub.sendMessage('colortheme.change',
                         chart_theme=self.theme_combobox.GetValue())
 
-    def on_save(self, e):
+    def on_save(self, event):
         """Saves the current settings."""
         theme = self.theme_combobox.GetValue()
 
@@ -450,15 +493,16 @@ class PreferencesFrame(wx.Frame):
             message = "Save successful!"
         else:
             message = "Uh-oh! Save unsuccessful!"
-        self.md = wx.MessageDialog(self, message,
-                                   style=wx.OK | wx.CENTRE)
-        self.md.ShowModal()
+        self.message_dialog = wx.MessageDialog(
+            self, message, style=wx.OK | wx.CENTRE)
+        self.message_dialog.ShowModal()
 
 
 def main():
+    """Runs the application"""
     app = wx.App()
-    fr = VisramFrame(None, title='Visram')
-    fr.Show()
+    frame = VisramFrame(None, title='Visram')
+    frame.Show()
     app.MainLoop()
 
 if __name__ == "__main__":

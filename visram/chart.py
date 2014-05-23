@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+"""The chart-drawing part of Visram."""
 import psutil
 import matplotlib
 from matplotlib.patches import Wedge
@@ -20,15 +21,21 @@ class ProcessWedge(Wedge):
 
     @property
     def arc(self):
+        """Returns the arc, in degrees, of this wedge."""
         return self.theta2 - self.theta1
 
     def get_shape_center(self):
+        """Returns the center of the shape."""
         theta = math.radians((self.theta1 + self.theta2) / 2)
-        x = self.center[0] + (self.r - self.width/2)*math.cos(theta)
-        y = self.center[1] + (self.r - self.width/2)*math.sin(theta)
-        return (x, y)
+        center_x = self.center[0] + (self.r - self.width/2)*math.cos(theta)
+        center_y = self.center[1] + (self.r - self.width/2)*math.sin(theta)
+        return (center_x, center_y)
 
     def get_wedge_points(self):
+        """Returns a list of points of the edges of the wedge.
+        Includes points at the start and end angle as well as at the
+        quadrilaterals.
+        Used for determining the bounds of the chart."""
         points = []
         theta1 = math.radians(self.theta1)
         theta2 = math.radians(self.theta2)
@@ -36,35 +43,41 @@ class ProcessWedge(Wedge):
         for angle in (0, math.pi / 2, math.pi, 3 * math.pi / 2,
                       theta1, theta2):
             if theta1 <= angle <= theta2:
-                x = self.center[0] + (self.r) * math.cos(angle)
-                y = self.center[1] + (self.r) * math.sin(angle)
-                points.append((x, y))
+                point_x = self.center[0] + (self.r) * math.cos(angle)
+                point_y = self.center[1] + (self.r) * math.sin(angle)
+                points.append((point_x, point_y))
 
         return points
 
     def get_bounds(self):
+        """Returns a (top, left, bottom, right) tuple for the rectangle that
+        contains all of the points in get_wedge_points()"""
         left = right = self.center[0]
         top = bottom = self.center[1]
 
-        for p in self.get_wedge_points():
+        for point in self.get_wedge_points():
 
-            left = min(left, p[0])
-            right = max(right, p[0])
-            top = max(top, p[1])
-            bottom = min(bottom, p[1])
+            left = min(left, point[0])
+            right = max(right, point[0])
+            top = max(top, point[1])
+            bottom = min(bottom, point[1])
 
         return (top, left, bottom, right)
 
-    def contains(self, event):
-        (x, y) = (event.xdata - self.center[0], event.ydata - self.center[1])
-        angle = math.degrees(math.atan2(y, x))
+    def contains_event(self, event):
+        """Returns whether the wedge contains a given event with xdata and
+        ydata.
+        """
+        relative_x = event.xdata - self.center[0]
+        relative_y = event.ydata - self.center[1]
+        angle = math.degrees(math.atan2(relative_y, relative_x))
         if angle < 0:
             angle += 360
 
-        mag = math.sqrt(x ** 2 + y ** 2)
+        mag = math.sqrt(relative_x ** 2 + relative_y ** 2)
         return self.contains_polar(mag, angle)
 
-    def contains_polar(self, r, angle_degrees):
+    def contains_polar(self, radius, angle_degrees):
         """
         Uses precalculated polar coordinates to determine whether the wedge
         contains a point.
@@ -74,23 +87,23 @@ class ProcessWedge(Wedge):
             angle += 360
 
         if self.theta1 <= angle <= self.theta2:
-            if self.r - self.width <= r <= self.r:
+            if self.r - self.width <= radius <= self.r:
                 return True
         return False
 
 
-def get_percent_including_children(p, p_dicts, p_childrens, key):
+def get_percent_including_children(process, p_dicts, p_childrens, key):
     """Gets the percent of RAM/CPU a process is using, including that used by
     all of its children."""
     try:
         processes_to_check_stack = []
-        processes_to_check_stack.append(p)
+        processes_to_check_stack.append(process)
         total_percent = 0
         while processes_to_check_stack:
-            p = processes_to_check_stack.pop()
+            process = processes_to_check_stack.pop()
             try:
-                total_percent += key(p_dicts[p.pid])
-                for child in p_childrens[p.pid]:
+                total_percent += key(p_dicts[process.pid])
+                for child in p_childrens[process.pid]:
                     processes_to_check_stack.append(child)
             except KeyError:
                 # processes are pretty unstable
@@ -119,46 +132,53 @@ def create_process_dict_map():
     importantly, gives a /snapshot/ of the system's processes at a certain
     time.
     """
-    map = {}
-    for p in psutil.process_iter():
-        map[p.pid] = p.as_dict(
+    dict_map = {}
+    for process in psutil.process_iter():
+        dict_map[process.pid] = process.as_dict(
             attrs=['pid', 'name', 'get_memory_percent', 'get_cpu_percent',
                    'username', 'get_memory_info'],
             ad_value="ACCESS DENIED")
-    return map
+    return dict_map
 
 
 def create_process_children_map():
     """Creates a dict of the children of each process in the system.
     This is way way way faster than calling psutil.get_children()
     each time we want to iterate on a process's children.
-    Indexed by process PID."""
-    map = {}
-    for p in psutil.process_iter():
-        map[p.pid] = []
-    for p in psutil.process_iter():
-        parent = p.parent()
+    Indexed by process PID.
+    """
+    child_map = {}
+
+    # create a list for each process
+    for process in psutil.process_iter():
+        child_map[process.pid] = []
+
+    # add each process to its parent's child list
+    for process in psutil.process_iter():
+        parent = process.parent()
         # in OSX, the process with PID=0 is it's own parent. We need to check
         # for recursive relationships like this to prevent infinite recursion.
-        if parent and parent.pid != p.pid:
-            map[parent.pid].append(p)
-    return map
+        if parent and parent.pid != process.pid:
+            child_map[parent.pid].append(process)
+    return child_map
 
 
-def draw_proc(p, ax, start_angle, depth, p_dicts, p_childrens, center, key,
-              scalar_cmap):
-    """Returns the arc and bounds of the drawn wedges.
-    Bounds are in the form of (top, left, bottom, right)"""
+def draw_proc(process, axes, start_angle, depth, p_dicts, p_childrens, center,
+              key, scalar_cmap):
+    """Draws the wedge for a process.
+    Returns the arc and bounds of the drawn wedges.
+    Bounds are in the form of (top, left, bottom, right).
+    """
     try:
-        r = 0.1 * (depth + 1)
-        p_arc = get_percent_including_children(p, p_dicts, p_childrens, key)\
-            / 100 * 360
+        radius = 0.1 * (depth + 1)
+        p_arc = get_percent_including_children(
+            process, p_dicts, p_childrens, key) / 100 * 360
         w_color = get_color(start_angle + p_arc / 2, depth, scalar_cmap)
         wedge = ProcessWedge(
-            p_dicts[p.pid], depth, center, r, start_angle,
+            p_dicts[process.pid], depth, center, radius, start_angle,
             start_angle + p_arc, width=0.1, facecolor=w_color,
             linewidth=.25)
-        ax.add_artist(wedge)
+        axes.add_artist(wedge)
 
         bounds = wedge.get_bounds()
 
@@ -166,13 +186,13 @@ def draw_proc(p, ax, start_angle, depth, p_dicts, p_childrens, center, key,
         # draw them in order of memory/cpu usage (including children)
         # (this lets the user focus on the big processes more easily)
         try:
-            for c in sorted(
-                    p_childrens[p.pid],
-                    key=lambda c: get_percent_including_children(
-                        c, p_dicts, p_childrens, key),
+            for child in sorted(
+                    p_childrens[process.pid],
+                    key=lambda child: get_percent_including_children(
+                        child, p_dicts, p_childrens, key),
                     reverse=True):
                 c_wedge, c_bounds = draw_proc(
-                    c, ax, start_angle, depth + 1,
+                    child, axes, start_angle, depth + 1,
                     p_dicts, p_childrens, center, key, scalar_cmap)
 
                 # if we successfully drew the child wedge and it returned a
@@ -193,6 +213,7 @@ def draw_proc(p, ax, start_angle, depth, p_dicts, p_childrens, center, key,
 
 
 def get_color(theta, depth, scalar_cmap):
+    """Gets a color for a wedge to be."""
     # get the index of the color in the colormap
     # (convert from degrees to float 0-to-1)
     color_index = theta / 360.0
@@ -222,7 +243,7 @@ def update_bounds(bounds, bounds2):
     return (top, left, bottom, right)
 
 
-def create_chart(type, theme):
+def create_chart(chart_type, theme):
     """
     The important function: creates a graph of all processes in the system.
     Types:
@@ -230,18 +251,20 @@ def create_chart(type, theme):
         'cpu' -- creates a chart of CPU usage
 
     theme -- the matplotlib color map to use
+
+    Returns a tuple of the produced figure, axes, and chart type.
     """
 
     # create a color map mappable between 0 and 1 for the theme
-    cm = cmx.get_cmap(theme)
+    cmap = cmx.get_cmap(theme)
     c_norm = colors.Normalize(vmin=0, vmax=1)
-    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cmap)
 
     procs = psutil.process_iter()
     fig = matplotlib.figure.Figure()
-    ax = fig.add_axes([0, 0, 1, .9])
+    axes = fig.add_axes([0, 0, 1, .9])
 
-    ax.tick_params(
+    axes.tick_params(
         which='both',
         bottom='off',
         left='off',
@@ -250,14 +273,14 @@ def create_chart(type, theme):
         labelleft='off',
         labelbottom='off')
 
-    for a in ("left", "right", "top", "bottom"):
-        ax.spines[a].set_visible(False)
+    for spine in ("left", "right", "top", "bottom"):
+        axes.spines[spine].set_visible(False)
 
-    if type == 'cpu':
-        ax.set_title("CPU Usage")
-    elif type == 'ram':
-        ax.set_title("RAM Usage")
-    ax.axis('scaled')
+    if chart_type == 'cpu':
+        axes.set_title("CPU Usage")
+    elif chart_type == 'ram':
+        axes.set_title("RAM Usage")
+    axes.axis('scaled')
     center = (0.5, 0.5)
 
     root_procs = get_root_processes(procs)
@@ -272,14 +295,14 @@ def create_chart(type, theme):
     # after this, p.get_cpu_percent() will return useful values
     # (even though we aren't calling this directly, it is called in
     # Process.as_dict(), so this helps)
-    for p in psutil.process_iter():
+    for process in psutil.process_iter():
         try:
-            p.get_cpu_percent(interval=0)
+            process.get_cpu_percent(interval=0)
         except psutil.AccessDenied:
             pass  # just skip processes we can't read
     time.sleep(0.2)
 
-    if type == 'cpu':
+    if chart_type == 'cpu':
         def key(p_dict):
             # first check if we can access it
             percent = p_dict['cpu_percent']
@@ -290,7 +313,7 @@ def create_chart(type, theme):
             # so divide by NUM_CPUs to get total percent
             return percent / psutil.cpu_count()
 
-    elif type == 'ram':
+    elif chart_type == 'ram':
         def key(p_dict):
             # return 0 if we can't access it
             percent = p_dict['memory_percent']
@@ -303,29 +326,30 @@ def create_chart(type, theme):
     p_dicts = create_process_dict_map()
     p_childrens = create_process_children_map()
 
-    for i, p in enumerate(root_procs):
-        ws, bounds2 = draw_proc(
-            p, ax, angle_so_far, 0, p_dicts, p_childrens, center, key,
+    for process in root_procs:
+        wedge, bounds2 = draw_proc(
+            process, axes, angle_so_far, 0, p_dicts, p_childrens, center, key,
             scalar_map)
         bounds = update_bounds(bounds, bounds2)
-        angle_so_far += ws.arc
+        angle_so_far += wedge.arc
 
-    ax.set_xlim(bounds[1], bounds[3])
-    ax.set_ylim(bounds[2], bounds[0])
+    axes.set_xlim(bounds[1], bounds[3])
+    axes.set_ylim(bounds[2], bounds[0])
 
-    return fig, ax, type
+    return fig, axes, chart_type
 
 
-def recolor(fig, ax, theme):
+def recolor(axes, theme):
     """Recolors a chart for a color theme."""
 
     # create a color map for the theme mappable between 0 and 1
-    cm = cmx.get_cmap(theme)
+    cmap = cmx.get_cmap(theme)
     c_norm = colors.Normalize(vmin=0, vmax=1)
-    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cmap)
 
     # go through each wedge and recolor it
-    for c in ax.get_children():
-        if isinstance(c, ProcessWedge):
-            w_color = get_color((c.theta1 + c.theta2) / 2, c.depth, scalar_map)
-            c.set_facecolor(w_color)
+    for child in axes.get_children():
+        if isinstance(child, ProcessWedge):
+            w_color = get_color(
+                (child.theta1 + child.theta2) / 2, child.depth, scalar_map)
+            child.set_facecolor(w_color)
