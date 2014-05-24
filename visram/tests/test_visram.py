@@ -1,5 +1,4 @@
 """For testing"""
-import visram
 import visram.chart
 import unittest
 

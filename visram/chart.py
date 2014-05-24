@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 """The chart-drawing part of Visram."""
 import psutil
-import matplotlib
 from matplotlib.patches import Wedge
 from matplotlib import colors
 import matplotlib.cm as cmx
