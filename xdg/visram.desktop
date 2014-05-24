@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Visram
+GenericName=RAM/CPU Usage Visualizer
+Comment=See a pie chart of your RAM or CPU usage
+Exec=visram
+Terminal=false
+Categories=System;Monitor;
