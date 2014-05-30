@@ -397,19 +397,19 @@ class VisramFrame(wx.Frame):
 
         # simple menu bar
         menu_bar = wx.MenuBar()
-        file_menu = wx.Menu()
 
-        exit_menu = file_menu.Append(wx.ID_EXIT, "Exit",
-                                     "Close window and exit program.")
+        file_menu = wx.Menu()
+        exit = file_menu.Append(wx.ID_EXIT, "Exit",
+                                "Close window and exit program.")
         menu_bar.Append(file_menu, "&File")
 
         edit_menu = wx.Menu()
-        preferences_menu = edit_menu.Append(wx.ID_PREFERENCES, "Preferences",
-                                            "Edit the colors, etc.")
+        preferences = edit_menu.Append(wx.ID_PREFERENCES, "Preferences",
+                                       "Edit the colors, etc.")
         menu_bar.Append(edit_menu, "&Edit")
 
-        self.Bind(wx.EVT_MENU, self.on_close, exit_menu)
-        self.Bind(wx.EVT_MENU, self.on_preferences, preferences_menu)
+        self.Bind(wx.EVT_MENU, self.on_close, exit)
+        self.Bind(wx.EVT_MENU, self.on_preferences, preferences)
 
         self.prefs = None
 
