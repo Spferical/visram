@@ -14,6 +14,7 @@ from functools import cmp_to_key
 
 from visram import chart
 from visram import mpltextwrap
+import visram
 
 
 def get_matplotlib_color(wx_color):
@@ -408,10 +409,17 @@ class VisramFrame(wx.Frame):
                                        "Edit the colors, etc.")
         menu_bar.Append(edit_menu, "&Edit")
 
+        help_menu = wx.Menu()
+        about = help_menu.Append(wx.ID_ABOUT, "About",
+                                 "Information about the program")
+        menu_bar.Append(help_menu, "&Help")
+
         self.Bind(wx.EVT_MENU, self.on_close, exit)
         self.Bind(wx.EVT_MENU, self.on_preferences, preferences)
+        self.Bind(wx.EVT_MENU, self.on_about, about)
 
         self.prefs = None
+        self.about = None
 
         self.SetMenuBar(menu_bar)
 
@@ -430,6 +438,18 @@ class VisramFrame(wx.Frame):
                 self, style=wx.SYSTEM_MENU | wx.CLOSE_BOX | wx.CAPTION |
                 wx.FRAME_FLOAT_ON_PARENT)
         self.prefs.Show()
+
+    def on_about(self, event):
+        """Shows an about dialog if not already shown."""
+        # create the about dialog and populate it with information
+        about_info = wx.AboutDialogInfo()
+        about_info.SetName("Visram")
+        about_info.SetDescription(visram.__description__)
+        about_info.SetVersion(visram.__version__)
+        about_info.SetDevelopers([visram.__author__])
+        about_info.SetCopyright(visram.__copyright__)
+        wx.AboutBox(about_info)
+
 
 
 class PreferencesFrame(wx.Frame):
