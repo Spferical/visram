@@ -2,10 +2,11 @@
 """Setup file for Visram"""
 
 from setuptools import setup
+import visram
 
 setup(
     name='visram',
-    version='0.1.0',
+    version=visram.__version__,
     description='Graphical RAM/CPU Visualizer',
     license='MIT',
     author='Matthew Pfeiffer',
