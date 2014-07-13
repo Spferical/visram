@@ -6,11 +6,11 @@ import unittest
 class TestVisram(unittest.TestCase):
 
     def _test_chart_type(self, chart_type):
-        fig, axes, chart_type = visram.chart.create_chart(
+        fig, axes, result_chart_type = visram.chart.create_chart(
             chart_type, 'spectral')
 
         # output chart type should be the same as the input
-        self.assertEqual(chart_type, chart_type)
+        self.assertEqual(chart_type, result_chart_type)
 
         # test size of bounds is not near-zero
         xlim = axes.get_xlim()
