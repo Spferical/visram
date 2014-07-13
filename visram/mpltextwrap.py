@@ -87,6 +87,3 @@ def min_dist_inside(point, rotation, box):
         # Intersects the bottom axis
         distances.append((box.y0 - y0) / sin(rotation))
     return min(distances)
-
-if __name__ == '__main__':
-    main()
