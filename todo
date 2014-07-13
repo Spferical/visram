@@ -13,3 +13,7 @@ Only show appropriate colormaps in themes menu
 Make process popup window look nicer
 
     HTML styling, or showing everything in a table
+
+Automatic, slowly-updating mode (update every X seconds)
+
+    Have a slowly-running process in the background collecting cpu or RAM usage
