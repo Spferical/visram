@@ -1,6 +1,6 @@
 # Just metadata in here for now, used for the about dialog
 
-__version__ = 'development'
+__version__ = '0.1-dev'
 __author__ = 'Matthew Pfeiffer <spferical@gmail.com>'
 __copyright__ = 'Copyright 2014 Matthew Pfeiffer <spferical@gmail.com>'
 __description__ = '''
