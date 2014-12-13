@@ -67,7 +67,7 @@ def get_p_text(p_dict):
 
 
 class ProcessPopup(wx.Frame):
-    """Poopup that displays info about a process."""
+    """Popup that displays info about a process."""
     def __init__(self, p_dict, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
 
