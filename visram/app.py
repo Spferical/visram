@@ -521,7 +521,7 @@ class PreferencesFrame(wx.Frame):
 def main():
     """Runs the application"""
     app = wx.App()
-    frame = VisramFrame(None, title='Visram')
+    frame = VisramFrame(None, title='Visram', size=wx.Size(460, 480))
     frame.Show()
     app.MainLoop()
 
