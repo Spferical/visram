@@ -67,8 +67,11 @@ class ProcessWedge(Wedge):
         """Returns whether the wedge contains a given event with xdata and
         ydata.
         """
-        relative_x = event.xdata - self.center[0]
-        relative_y = event.ydata - self.center[1]
+        return self.contains_point(event.xdata, event.ydata)
+
+    def contains_point(self, x, y):
+        relative_x = x - self.center[0]
+        relative_y = y - self.center[1]
         angle = math.degrees(math.atan2(relative_y, relative_x))
         if angle < 0:
             angle += 360
