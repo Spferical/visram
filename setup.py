@@ -12,10 +12,11 @@ setup(
     author='Matthew Pfeiffer',
     author_email='spferical@gmail.com',
     url='http://github.com/Spferical/visram',
-    packages=['visram', 'visram.tests'],
+    packages=['visram'],
     install_requires=['wxPython', 'matplotlib', 'psutil'],
+    # can't use entry_points without it depending on all of the dependencies of
+    # the requires, down to nose
     scripts=['bin/visram'],
-    test_suite='visram.tests',
     platforms=['any'],
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -30,6 +31,11 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python :: 2 :: Only',
+        'Programming Language :: Python :: 2.7',
         'Topic :: System :: Monitoring',
         ],
-    )
+    data_files=[
+        ('/usr/share/applications', ['xdg/visram.desktop']),
+        ('/usr/share/licenses/visram', ['LICENSE.TXT']),
+    ]
+)
