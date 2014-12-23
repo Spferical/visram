@@ -35,7 +35,7 @@ setup(
         'Topic :: System :: Monitoring',
         ],
     data_files=[
-        ('/usr/share/applications', ['xdg/visram.desktop']),
-        ('/usr/share/licenses/visram', ['LICENSE.TXT']),
+        ('share/applications', ['xdg/visram.desktop']),
+        ('share/licenses/visram', ['LICENSE.TXT']),
     ]
 )
