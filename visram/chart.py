@@ -137,8 +137,8 @@ def create_process_dict_map():
     dict_map = {}
     for process in psutil.process_iter():
         dict_map[process.pid] = process.as_dict(
-            attrs=['pid', 'name', 'get_memory_percent', 'get_cpu_percent',
-                   'username', 'get_memory_info'],
+            attrs=['pid', 'name', 'memory_percent', 'cpu_percent',
+                   'username', 'memory_info'],
             ad_value="ACCESS DENIED")
     return dict_map
 
@@ -290,16 +290,16 @@ def create_chart(chart_type, theme):
     angle_so_far = 0
     bounds = (0.5, 0.5, 0.5, 0.5)
 
-    # by default, psutil waits 0.1 seconds per get_cpu_percent() call
+    # by default, psutil waits 0.1 seconds per cpu_percent() call
     # this is very slow
-    # what we can do is call get_cpu_percent for each process at once,
+    # what we can do is call cpu_percent for each process at once,
     # then wait a bit to measure each process's CPU usage.
-    # after this, p.get_cpu_percent() will return useful values
+    # after this, p.cpu_percent() will return useful values
     # (even though we aren't calling this directly, it is called in
     # Process.as_dict(), so this helps)
     for process in psutil.process_iter():
         try:
-            process.get_cpu_percent(interval=0)
+            process.cpu_percent(interval=0)
         except psutil.AccessDenied:
             pass  # just skip processes we can't read
     time.sleep(0.2)
