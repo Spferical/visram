@@ -32,7 +32,7 @@ def autowrap_text(textobj, renderer):
     # Get the starting position of the text in pixels...
     x0, y0 = textobj.get_transform().transform(textobj.get_position())
     # Get the extents of the current axis in pixels...
-    clip = textobj.get_axes().get_window_extent()
+    clip = textobj.axes.get_window_extent()
     # Set the text to rotate about the left edge (doesn't make sense otherwise)
     textobj.set_rotation_mode('anchor')
 
