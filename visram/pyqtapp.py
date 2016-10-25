@@ -45,6 +45,8 @@ class VisramChart(QtWidgets.QGraphicsView):
 
         self.colormap = cmx.ScalarMappable(norm=c_norm, cmap=cmap)
 
+        self.setRenderHints(QtGui.QPainter.Antialiasing)
+
         self.setupScene()
 
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -86,11 +88,11 @@ class VisramChart(QtWidgets.QGraphicsView):
         self.update()
 
     def drawProcess(self, pid, angle, depth, process_graph):
-        color = get_wedge_color(angle, depth, self.colormap)
         memory_percent = process_graph.get_percent_including_children(pid)
         if memory_percent is None:
             memory_percent = 0
         angle2 = angle + memory_percent / 100 * 360
+        color = get_wedge_color((angle + angle2) / 2, depth, self.colormap)
         item = self.drawWedge(color, angle, angle2, depth, depth + 1)
         item.setToolTip(process_graph.get_name(pid))
         child_angle = angle
