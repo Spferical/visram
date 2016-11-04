@@ -1,16 +1,10 @@
 import psutil
 
 
-def sort_key(p_dict):
-    # return 0 if we can't access it
-    percent = p_dict['memory_percent']
-    if percent == 'ACCESS DENIED':
-        return 0
-    # else return it
-    return percent
-
-
 def generate_process_graph():
+    """
+    Returns a process graph of all the processes in the system.
+    """
     return ProcessGraph(psutil.process_iter())
 
 

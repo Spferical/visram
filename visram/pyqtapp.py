@@ -74,6 +74,10 @@ class VisramChart(QtWidgets.QGraphicsView):
                        mode=QtCore.Qt.KeepAspectRatio)
 
     def updateChart(self, process_graph):
+        """
+        Clears and redraws the chart of all the processes based on the
+        the passed-in process graph.
+        """
         self.scene.clear()
         angle = 0
         sort_key = process_graph.get_percent_including_children
@@ -88,6 +92,9 @@ class VisramChart(QtWidgets.QGraphicsView):
         self.update()
 
     def drawProcess(self, pid, angle, depth, process_graph):
+        """
+        Recursive function to draw a given process and all its children.
+        """
         memory_percent = process_graph.get_percent_including_children(pid)
         if memory_percent is None:
             memory_percent = 0
@@ -104,12 +111,16 @@ class VisramChart(QtWidgets.QGraphicsView):
         return angle2
 
     def setupScene(self):
+        """
+        Initializes the QGraphicsScene with the right background/etc.
+        """
         self.scene = QtWidgets.QGraphicsScene(self)
         self.setScene(self.scene)
-        self.drawWedge((1, 0.5, 0),
-                       180, 340, 1, 2)
 
     def drawWedge(self, color, theta1, theta2, radius1, radius2):
+        """
+        Draws a wedge to our graphics scene with the given polar coordinates.
+        """
         innerRect = QtCore.QRectF(-radius1, -radius1,
                                   radius1 * 2, radius1 * 2)
         outerRect = QtCore.QRectF(-radius2, -radius2,
@@ -127,6 +138,10 @@ class VisramChart(QtWidgets.QGraphicsView):
 
 
 class Updater(QtCore.QObject):
+    """
+    Class that continually updates a graph of all processes and emits it on the
+    update signal.
+    """
     update = QtCore.pyqtSignal(processes.ProcessGraph)
     stop = False
 
@@ -137,18 +152,6 @@ class Updater(QtCore.QObject):
         while not self.stop:
             self.update.emit(processes.generate_process_graph())
             time.sleep(1)
-
-
-def get_wedges(process_graph):
-    pass
-
-
-class Wedge(object):
-    def __init__(self, angle1, angle2, radius1, radius2):
-        self.angle1 = angle1
-        self.angle2 = angle2
-        self.radius1 = radius1
-        self.radius2 = radius2
 
 
 def get_wedge_color(theta, depth, scalar_cmap):
