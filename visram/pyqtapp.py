@@ -25,6 +25,12 @@ class VisramMainWindow(QtWidgets.QMainWindow):
         aboutAction = QtWidgets.QAction("&Help", self)
         aboutAction.setStatusTip("Information about the program")
 
+        def showAbout():
+            QtWidgets.QMessageBox.about(
+                self, "About Visram", "About Text")
+
+        aboutAction.triggered.connect(showAbout)
+
         helpMenu.addAction(aboutAction)
 
         self.chart = VisramChart(self)
