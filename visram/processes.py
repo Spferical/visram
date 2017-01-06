@@ -36,22 +36,17 @@ class ProcessGraph(object):
         if pid in self.mem_percents_including_children:
             return self.mem_percents_including_children[pid]
         try:
-            pids_to_check_stack = []
-            pids_to_check_stack.append(pid)
-            total_percent = 0
-            while pids_to_check_stack:
-                pid = pids_to_check_stack.pop()
-                try:
-                    total_percent += self.p_dicts[pid]['memory_percent']
-                    for child in self.child_map[pid]:
-                        pids_to_check_stack.append(child)
-                except KeyError:
-                    # processes are pretty unstable
-                    # and may not have been put in child_map or p_dicts
-                    pass
+            total_percent = self.get_memory_percent(pid) + sum(
+                self.get_percent_including_children(child)
+                for child in self.get_child_pids(pid))
             self.mem_percents_including_children[pid] = total_percent
             return total_percent
         except psutil.NoSuchProcess:
+            # processes are ephemeral, this one must have disappeared
+            return 0
+        except KeyError:
+            # processes are ephemeral, this one must have newly appeared
+            # and not have been put into the maps earlier: just ignore it
             return 0
 
     def _update_root_pids(self):
