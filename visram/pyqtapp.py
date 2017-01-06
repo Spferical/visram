@@ -33,11 +33,36 @@ class VisramMainWindow(QtWidgets.QMainWindow):
 
         helpMenu.addAction(aboutAction)
 
+        self.setCentralWidget(VisramMainWidget())
+
+
+class VisramMainWidget(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.backgroundThread = None
+
+        vbox = QtWidgets.QVBoxLayout()
+        drawButton = QtWidgets.QPushButton("Draw RAM Usage Chart")
+        drawButton.clicked.connect(self._update_graph_in_background_thread)
         self.chart = VisramChart(self)
-        self.setCentralWidget(self.chart)
+        vbox.addWidget(drawButton)
+        vbox.addWidget(self.chart)
+
+        self.setLayout(vbox)
 
     def closeEvent(self, event):
         self.chart.close()
+
+    def _update_graph_in_background_thread(self):
+        # start updater object on separate thread
+        self.backgroundThread = QtCore.QThread()
+        self.worker = ProcessReader()
+        self.worker.moveToThread(self.backgroundThread)
+        self.backgroundThread.started.connect(self.worker.run)
+        self.worker.resultsReady.connect(self.chart.updateChart)
+        self.backgroundThread.start()
 
 
 class VisramChart(QtWidgets.QGraphicsView):
@@ -57,14 +82,6 @@ class VisramChart(QtWidgets.QGraphicsView):
 
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-
-        # start updater object on separate thread
-        self.updateThread = QtCore.QThread()
-        self.updater = Updater()
-        self.updater.moveToThread(self.updateThread)
-        self.updateThread.started.connect(self.updater.run)
-        self.updater.update.connect(self.updateChart)
-        self.updateThread.start()
 
     def close(self):
         """
@@ -145,21 +162,18 @@ class VisramChart(QtWidgets.QGraphicsView):
         return self.scene.addPath(path, QtGui.QPen(QtCore.Qt.NoPen), brush)
 
 
-class Updater(QtCore.QObject):
+class ProcessReader(QtCore.QObject):
     """
-    Class that continually updates a graph of all processes and emits it on the
-    update signal.
+    Class that updates a graph of all processes in a background thread and
+    emits it in the new_processes signal.
     """
-    update = QtCore.pyqtSignal(processes.ProcessGraph)
-    stop = False
+    resultsReady = QtCore.pyqtSignal(processes.ProcessGraph)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def run(self):
-        while not self.stop:
-            self.update.emit(processes.generate_process_graph())
-            time.sleep(1)
+        self.resultsReady.emit(processes.generate_process_graph())
 
 
 def get_wedge_color(theta, depth, scalar_cmap):
