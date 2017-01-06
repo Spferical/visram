@@ -59,13 +59,18 @@ class VisramMainWidget(QtWidgets.QWidget):
     def closeEvent(self, event):
         self.chart.close()
 
+    def onResultsReady(self, process_graph):
+        self.backgroundThread.quit()
+        self.backgroundThread.wait()
+        self.chart.updateChart(process_graph)
+
     def _update_graph_in_background_thread(self):
         # start updater object on separate thread
         self.backgroundThread = QtCore.QThread()
         self.worker = ProcessReader()
         self.worker.moveToThread(self.backgroundThread)
         self.backgroundThread.started.connect(self.worker.run)
-        self.worker.resultsReady.connect(self.chart.updateChart)
+        self.worker.resultsReady.connect(self.onResultsReady)
         self.backgroundThread.start()
 
 
