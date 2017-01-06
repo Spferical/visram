@@ -16,7 +16,7 @@ class VisramMainWindow(QtWidgets.QMainWindow):
 
     def initUI(self):
         self.setWindowTitle("Visram")
-        self.resize(250, 250)
+        self.resize(460, 480)
 
         menuBar = self.menuBar()
 
