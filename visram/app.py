@@ -30,7 +30,7 @@ class VisramMainWindow(QtWidgets.QMainWindow):
 
         def showAbout():
             title = "Visram " + visram.__version__
-            content = visram.__description__ + '\n\n' + visram.__copyright__
+            content = visram.__description__
             self.about = QtWidgets.QMessageBox.about(self, title, content)
 
         aboutAction.triggered.connect(showAbout)
