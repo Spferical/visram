@@ -122,6 +122,8 @@ class VisramChart(QtWidgets.QGraphicsView):
         """
         self.scene = QtWidgets.QGraphicsScene(self)
         self.setScene(self.scene)
+        self.scene.setBackgroundBrush(
+            self.palette().color(QtGui.QPalette.Background))
 
     def drawWedge(self, color, theta1, theta2, radius1, radius2):
         """
