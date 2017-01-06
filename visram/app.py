@@ -7,6 +7,7 @@ import sys
 import time
 
 from visram import processes
+import visram
 
 
 class VisramMainWindow(QtWidgets.QMainWindow):
@@ -22,12 +23,15 @@ class VisramMainWindow(QtWidgets.QMainWindow):
 
         helpMenu = menuBar.addMenu("&Help")
 
+        self.about = None
+
         aboutAction = QtWidgets.QAction("&Help", self)
         aboutAction.setStatusTip("Information about the program")
 
         def showAbout():
-            QtWidgets.QMessageBox.about(
-                self, "About Visram", "About Text")
+            title = "Visram " + visram.__version__
+            content = visram.__description__ + '\n\n' + visram.__copyright__
+            self.about = QtWidgets.QMessageBox.about(self, title, content)
 
         aboutAction.triggered.connect(showAbout)
 
