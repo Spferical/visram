@@ -89,7 +89,9 @@ class ProcessGraph(object):
             p['parent'] = parent.pid if parent is not None else None
             self.p_dicts[p['pid']] = p
         except psutil.NoSuchProcess:
-            self._snapshot_process(process)
+            # processes are ephemeral, this one must have disappeared, so
+            # ignore it
+            pass
 
     def _get_percents_including_children(self):
         for pid in self.p_dicts:
