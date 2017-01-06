@@ -79,6 +79,9 @@ class VisramChart(QtWidgets.QGraphicsView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._process_graph = None
+        self._process_popup = None
+
         cmap = cmx.get_cmap('spectral')
 
         c_norm = colors.Normalize(vmin=0, vmax=1)
@@ -110,6 +113,7 @@ class VisramChart(QtWidgets.QGraphicsView):
         Clears and redraws the chart of all the processes based on the
         the passed-in process graph.
         """
+        self._process_graph = process_graph
         self.scene.clear()
         angle = 0
         sort_key = process_graph.get_percent_including_children
@@ -132,8 +136,8 @@ class VisramChart(QtWidgets.QGraphicsView):
             memory_percent = 0
         angle2 = angle + memory_percent / 100 * 360
         color = get_wedge_color((angle + angle2) / 2, depth, self.colormap)
-        item = self.drawWedge(color, angle, angle2, depth, depth + 1)
-        item.setToolTip(process_graph.get_name(pid))
+        self.drawWedge(color, angle, angle2, depth, depth + 1, pid,
+                       process_graph)
         child_angle = angle
         sort_key = process_graph.get_percent_including_children
         child_pids = process_graph.get_child_pids(pid)
@@ -151,7 +155,8 @@ class VisramChart(QtWidgets.QGraphicsView):
         self.scene.setBackgroundBrush(
             self.palette().color(QtGui.QPalette.Background))
 
-    def drawWedge(self, color, theta1, theta2, radius1, radius2):
+    def drawWedge(self, color, theta1, theta2, radius1, radius2, pid,
+                  process_graph):
         """
         Draws a wedge to our graphics scene with the given polar coordinates.
         """
@@ -168,7 +173,37 @@ class VisramChart(QtWidgets.QGraphicsView):
         path.arcTo(innerRect, theta2, theta1 - theta2)
 
         brush = QtGui.QBrush(QtGui.QColor(*(c * 255 for c in color)))
-        return self.scene.addPath(path, QtGui.QPen(QtCore.Qt.NoPen), brush)
+
+        item = ProcessWedge(pid, path)
+        item.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+        item.setBrush(brush)
+
+        item.setToolTip(process_graph.get_name(pid))
+
+        self.scene.addItem(item)
+
+    def mousePressEvent(self, event):
+        item = self.itemAt(event.pos())
+        if item is not None:
+            pid = item.pid
+            text = get_p_text(pid, self._process_graph)
+            if self._process_popup is None:
+                self._process_popup = QtWidgets.QMessageBox(
+                    QtWidgets.QMessageBox.Information,
+                    self._process_graph.get_name(pid),
+                    text, parent=self)
+                self._process_popup.setModal(False)
+            else:
+                self._process_popup.setWindowTitle(
+                    self._process_graph.get_name(pid))
+                self._process_popup.setText(text)
+            self._process_popup.show()
+
+
+class ProcessWedge(QtWidgets.QGraphicsPathItem):
+    def __init__(self, pid, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pid = pid
 
 
 class ProcessReader(QtCore.QObject):
@@ -205,6 +240,49 @@ def get_wedge_color(theta, depth, scalar_cmap):
         color[3] * amod)
 
     return color
+
+
+def get_p_text(pid, process_graph):
+    """Returns a textual description of a process.
+    Includes various info, including name, PID, CPU/RAM usage, etc.
+    Includes name, PID, CPU percent, memory percent, memory usage, and the
+    process's owner.
+    """
+    name = process_graph.get_name(pid)
+    cpu_percent = process_graph.get_cpu_percent(pid)
+    memory_percent = process_graph.get_memory_percent(pid)
+    memory_usage = process_graph.get_memory_info(pid)
+    owner = process_graph.get_username(pid)
+
+    if cpu_percent != 'ACCESS DENIED':
+        cpu_percent = '{:.2f}'.format(cpu_percent)
+    if memory_percent != 'ACCESS DENIED':
+        memory_percent = '{:.2f}'.format(memory_percent)
+    if memory_usage != 'ACCESS DENIED':
+        memory_usage = sizeof_fmt(memory_usage[0])
+
+    text = '\n'.join((
+        'Name: %s' % name,
+        'PID: %s' % pid,
+        'CPU percent: %s' % cpu_percent,
+        'Memory percent: %s' % memory_percent,
+        'Memory usage: %s' % memory_usage,
+        'Owner: %s' % owner))
+    return text
+
+
+def sizeof_fmt(num):
+    """
+    Returns a number of bytes in a more human-readable form.
+    Scaled to the nearest unit that there are less than 1024 of, up to
+    a maximum of TBs.
+    Thanks to stackoverflow.com/questions/1094841.
+    """
+    for unit in ['bytes', 'KB', 'MB', 'GB']:
+        if num < 1024.0:
+            return "%3.1f%s" % (num, unit)
+        num /= 1024.0
+    return "%3.1f%s" % (num, 'TB')
 
 
 def main():
