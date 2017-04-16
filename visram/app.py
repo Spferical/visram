@@ -63,15 +63,17 @@ class VisramMainWidget(QtWidgets.QWidget):
         self.backgroundThread.quit()
         self.backgroundThread.wait()
         self.chart.updateChart(process_graph)
+        self.backgroundThread = None
 
     def _update_graph_in_background_thread(self):
-        # start updater object on separate thread
-        self.backgroundThread = QtCore.QThread()
-        self.worker = ProcessReader()
-        self.worker.moveToThread(self.backgroundThread)
-        self.backgroundThread.started.connect(self.worker.run)
-        self.worker.resultsReady.connect(self.onResultsReady)
-        self.backgroundThread.start()
+        if self.backgroundThread is None:
+            # start updater object on separate thread
+            self.backgroundThread = QtCore.QThread()
+            self.worker = ProcessReader()
+            self.worker.moveToThread(self.backgroundThread)
+            self.backgroundThread.started.connect(self.worker.run)
+            self.worker.resultsReady.connect(self.onResultsReady)
+            self.backgroundThread.start()
 
 
 class VisramChart(QtWidgets.QGraphicsView):
