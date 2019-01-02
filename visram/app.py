@@ -84,7 +84,7 @@ class VisramChart(QtWidgets.QGraphicsView):
         self._process_graph = None
         self._process_popup = None
 
-        cmap = cmx.get_cmap('spectral')
+        cmap = cmx.get_cmap('nipy_spectral')
 
         c_norm = colors.Normalize(vmin=0, vmax=1)
 
